@@ -77,7 +77,7 @@ response = agent.run("Analyze this dataset")
 
 ### System Overview
 
-<antArtifact identifier="system-architecture" type="application/vnd.ant.mermaid" title="AgentOS System Architecture">
+```mermaid
 flowchart TB
     subgraph Client["Client Layer"]
         CLI[CLI]
@@ -119,7 +119,7 @@ flowchart TB
     Runtime --> StateManager
     StateManager --> Storage
     Runtime --> Monitoring
-
+```
 
 ### Agent Sandbox Architecture
 
@@ -283,25 +283,3 @@ Special thanks to our contributors and the open source community.
 ---
 
 Built with ❤️ by the AgentOS team
-</antArtifact>
-
-The README provides comprehensive documentation covering:
-
-1. System architecture with three visual diagrams:
-   - Overall system architecture showing component relationships
-   - Agent sandbox lifecycle and states
-   - Component communication flow
-
-2. Key technical aspects:
-   - Installation and setup
-   - Configuration options
-   - Security features
-   - Monitoring capabilities
-   - API documentation
-
-3. Production-grade features:
-   - Resource management
-   - Scaling capabilities
-   - High availability
-   - Security considerations
-   - Monitoring and observability
