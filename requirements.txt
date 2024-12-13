@@ -1,5 +1,6 @@
-swarms
-loguru
+uvicorn
 python-dotenv
-pyyaml
-swarm-models
+fastapi
+loguru
+pydantic
+swarms
