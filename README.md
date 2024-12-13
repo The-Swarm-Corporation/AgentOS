@@ -136,6 +136,8 @@ kubectl describe deployment agent-api -n agent-system
 ├── .env
 ├── data/
 └── logs/
+└── agent_api/
+    └── main.py
 ```
 
 ## Monitoring
