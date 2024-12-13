@@ -1,0 +1,274 @@
+# complete-agent-deployment.yaml
+---
+# Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: agent-system
+  labels:
+    name: agent-system
+    environment: production
+---
+# ConfigMap for application configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agent-config
+  namespace: agent-system
+data:
+  WORKSPACE_DIR: "agent_workspace"
+  WORKERS: "4"
+  TIMEOUT: "120"
+  LOG_LEVEL: "warning"
+  MAX_REQUESTS: "10000"
+---
+# Secret for sensitive data
+apiVersion: v1
+kind: Secret
+metadata:
+  name: agent-secrets
+  namespace: agent-system
+type: Opaque
+data:
+  # Add your base64 encoded secrets here
+  API_KEY: ""
+---
+# Persistent Volume for Data
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: agent-data-pv
+  namespace: agent-system
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: agent-storage
+  hostPath:
+    path: /data/agent-data
+---
+# Persistent Volume for Logs
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: agent-logs-pv
+  namespace: agent-system
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: agent-storage
+  hostPath:
+    path: /data/agent-logs
+---
+# Persistent Volume Claims
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: agent-data-pvc
+  namespace: agent-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: agent-storage
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: agent-logs-pvc
+  namespace: agent-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: agent-storage
+  resources:
+    requests:
+      storage: 5Gi
+---
+# Service Account
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: agent-service-account
+  namespace: agent-system
+---
+# Network Policy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: agent-network-policy
+  namespace: agent-system
+spec:
+  podSelector:
+    matchLabels:
+      app: agent-api
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: agent-system
+      ports:
+        - protocol: TCP
+          port: 8000
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: agent-system
+      ports:
+        - protocol: TCP
+          port: 443
+---
+# Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: agent-api
+  namespace: agent-system
+  labels:
+    app: agent-api
+spec:
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: http
+  selector:
+    app: agent-api
+  type: ClusterIP
+---
+# Main Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agent-api
+  namespace: agent-system
+  labels:
+    app: agent-api
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: agent-api
+  template:
+    metadata:
+      labels:
+        app: agent-api
+    spec:
+      serviceAccountName: agent-service-account
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+      containers:
+        - name: agent-api
+          image: agent-api:latest
+          imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          ports:
+            - containerPort: 8000
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: agent-config
+            - secretRef:
+                name: agent-secrets
+          resources:
+            requests:
+              cpu: "1"
+              memory: "1Gi"
+            limits:
+              cpu: "2"
+              memory: "2Gi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          volumeMounts:
+            - name: agent-data
+              mountPath: /agent_workspace/data
+            - name: agent-logs
+              mountPath: /agent_workspace/logs
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: agent-data
+          persistentVolumeClaim:
+            claimName: agent-data-pvc
+        - name: agent-logs
+          persistentVolumeClaim:
+            claimName: agent-logs-pvc
+        - name: tmp
+          emptyDir: {}
+---
+# Resource Quota
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: agent-quota
+  namespace: agent-system
+spec:
+  hard:
+    requests.cpu: "4"
+    requests.memory: 4Gi
+    limits.cpu: "8"
+    limits.memory: 8Gi
+    pods: "10"
+---
+# Horizontal Pod Autoscaler
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: agent-api-hpa
+  namespace: agent-system
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: agent-api
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
