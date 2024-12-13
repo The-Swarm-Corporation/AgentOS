@@ -18,268 +18,208 @@ AgentOS is an enterprise-ready infrastructure platform designed for deploying, m
 
 ## 🚀 Key Features
 
-- **Secure Sandboxing**: Isolated environments for each agent with configurable resource limits
-- **Resource Management**: Dynamic resource allocation and monitoring
-- **State Management**: Persistent state handling with automatic backup and recovery
-- **Observability**: Comprehensive logging, metrics, and tracing
-- **Scaling**: Horizontal and vertical scaling capabilities
-- **API Gateway**: RESTful and WebSocket interfaces for agent communication
-- **Security**: Role-based access control and encryption at rest/in transit
-- **High Availability**: Distributed architecture with failover support
+- Secure containerized environment
+- Integrated memory system
+- Tool access management
+- API endpoints for agent interaction
+- Horizontal scaling support
+- Production-grade security
 
-## 📋 Table of Contents
+## Prerequisites
+- Docker 24.0+
+- Docker Compose 2.0+
+- Kubernetes 1.25+ (for orchestration)
 
-- [Installation](#installation)
-- [Quick Start](#quick-start)
-- [Architecture](#architecture)
-- [Configuration](#configuration)
-- [Security](#security)
-- [Deployment](#deployment)
-- [Monitoring](#monitoring)
-- [API Reference](#api-reference)
-- [Contributing](#contributing)
-- [License](#license)
+## Environment Variables
+Create a `.env` file with the following required variables:
 
-## 🔧 Installation
+```env
+# Core Configuration
+WORKSPACE_DIR=agent_workspace
 
+# API Keys
+OPENAI_API_KEY=your_openai_key
+ANTHROPIC_API_KEY=your_anthropic_key
+PINECONE_API_KEY=your_pinecone_key
+GOOGLE_API_KEY=your_google_key
+REPLICATE_API_TOKEN=your_replicate_token
+STABILITY_API_KEY=your_stability_key
+COHERE_API_KEY=your_cohere_key
+
+# Optional Configuration
+WORKERS=4
+TIMEOUT=120
+LOG_LEVEL=warning
+MAX_REQUESTS=10000
+```
+
+## Quick Start
+
+### Using Docker
+
+1. Build the image:
 ```bash
-# Install using pip
-pip install agentos
-
-# Install with optional dependencies
-pip install agentos[all]
-
-# Install development version
-pip install git+https://github.com/The-Swarm-Corporation/agentos.git
+docker build -t agent-api:latest .
 ```
 
-## 🚀 Quick Start
-
-```python
-from agentos import AgentOS, Agent
-
-# Initialize AgentOS
-aos = AgentOS()
-
-# Create a sandboxed agent
-agent = aos.create_agent(
-    name="example-agent",
-    model="gpt-4",
-    memory_limit="2GB",
-    cpu_limit="2"
-)
-
-# Run agent in sandbox
-response = agent.run("Analyze this dataset")
-```
-
-## 🏗 Architecture
-
-### System Overview
-
-```mermaid
-flowchart TB
-    subgraph Client["Client Layer"]
-        CLI[CLI]
-        SDK[SDK]
-        API[REST API]
-    end
-
-    subgraph Core["Core Services"]
-        direction TB
-        Gateway[API Gateway]
-        Auth[Auth Service]
-        Scheduler[Scheduler]
-        StateManager[State Manager]
-    end
-
-    subgraph Runtime["Runtime Layer"]
-        direction TB
-        Sandbox1[Agent Sandbox 1]
-        Sandbox2[Agent Sandbox 2]
-        SandboxN[Agent Sandbox N]
-    end
-
-    subgraph Storage["Storage Layer"]
-        DB[(Database)]
-        Cache[(Cache)]
-        ObjectStore[(Object Store)]
-    end
-
-    subgraph Monitoring["Monitoring Stack"]
-        Metrics[Metrics]
-        Logs[Logs]
-        Traces[Traces]
-    end
-
-    Client --> Gateway
-    Gateway --> Auth
-    Auth --> Scheduler
-    Scheduler --> Runtime
-    Runtime --> StateManager
-    StateManager --> Storage
-    Runtime --> Monitoring
-```
-
-### Agent Sandbox Architecture
-
-```mermaid
-stateDiagram-v2
-    [*] --> Initialize: Create Sandbox
-    Initialize --> Running: Start Agent
-    Running --> Paused: Suspend
-    Paused --> Running: Resume
-    Running --> Terminated: Stop
-    Running --> Error: Exception
-    Error --> Running: Recover
-    Terminated --> [*]
-
-    note right of Initialize
-        - Resource allocation
-        - Security policies
-        - Network isolation
-    end note
-
-    note right of Running
-        - Resource monitoring
-        - State management
-        - Event logging
-    end note
-
-```
-
-### Component Communication
-
-```mermaid
-sequenceDiagram
-    participant C as Client
-    participant G as Gateway
-    participant S as Scheduler
-    participant A as Agent Sandbox
-    participant M as Monitoring
-
-    C->>G: Request
-    G->>G: Authenticate
-    G->>S: Schedule Task
-    S->>A: Initialize Agent
-    A->>A: Execute Task
-    A->>M: Send Metrics
-    A-->>S: Status Updates
-    S-->>G: Results
-    G-->>C: Response
-
-```
-
-## ⚙️ Configuration
-
-Configuration can be done via YAML file or environment variables:
-
-```yaml
-agentos:
-  sandbox:
-    memory_limit: 2GB
-    cpu_limit: 2
-    network_policy: restricted
-  security:
-    encryption_key: ${ENCRYPTION_KEY}
-    auth_provider: oauth2
-  monitoring:
-    metrics_interval: 60
-    log_level: INFO
-```
-
-## 🔒 Security
-
-AgentOS implements multiple security layers:
-
-- Sandboxed environments using container isolation
-- RBAC (Role-Based Access Control)
-- Encryption at rest and in transit
-- Network policy enforcement
-- Resource quotas and limits
-
-## 📊 Monitoring
-
-Built-in monitoring capabilities include:
-
-- Metrics: CPU, memory, network usage
-- Logs: Structured logging with correlation IDs
-- Traces: Distributed tracing support
-- Alerts: Configurable alerting rules
-
-Example metrics collection:
-
-```python
-from agentos.monitoring import metrics
-
-# Record custom metric
-metrics.record(
-    name="agent_completion_time",
-    value=1.23,
-    labels={"agent_id": "agent-123"}
-)
-```
-
-## 🔌 API Reference
-
-### REST API
-
+2. Run the container:
 ```bash
-# Create agent
-POST /v1/agents
-{
-    "name": "example-agent",
-    "model": "gpt-4",
-    "config": {
-        "memory_limit": "2GB"
-    }
-}
-
-# Run agent
-POST /v1/agents/{agent_id}/run
-{
-    "input": "Analyze this dataset"
-}
+docker run -d \
+    --name agent-api \
+    --env-file .env \
+    -p 8000:8000 \
+    -v $(pwd)/data:/agent_workspace/data \
+    -v $(pwd)/logs:/agent_workspace/logs \
+    --security-opt=no-new-privileges \
+    --cap-drop=ALL \
+    --read-only \
+    agent-api:latest
 ```
 
-### Python SDK
+### Using Docker Compose
 
-```python
-from agentos import AgentOS
-
-# Initialize with custom configuration
-aos = AgentOS(config_path="config.yaml")
-
-# Create agent pool
-pool = aos.create_agent_pool(
-    name="analysis-pool",
-    size=5,
-    model="gpt-4"
-)
-
-# Scale pool
-pool.scale(size=10)
-```
-
-## 👥 Contributing
-
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
-
+1. Start the services:
 ```bash
-# Setup development environment
-git clone https://github.com/The-Swarm-Corporation/agentos.git
-cd agentos
-pip install -e ".[dev]"
+docker compose up -d
 ```
 
-## 📄 License
+2. View logs:
+```bash
+docker compose logs -f
+```
 
-Apache License 2.0 - see [LICENSE](LICENSE) for details.
+3. Stop services:
+```bash
+docker compose down
+```
 
-## 🙏 Acknowledgments
+## Kubernetes Deployment
 
-Special thanks to our contributors and the open source community.
+1. Create required namespaces and secrets:
+```bash
+# Apply the complete configuration
+kubectl apply -f complete-agent-deployment.yaml
 
----
+# Verify the deployment
+kubectl get all -n agent-system
+```
 
-Built with ❤️ by the AgentOS team
+2. Monitor the deployment:
+```bash
+kubectl get pods -n agent-system
+kubectl describe deployment agent-api -n agent-system
+```
+
+## Security Configuration
+
+### Docker Security Features
+- Non-root user execution
+- Read-only filesystem
+- Dropped capabilities
+- No privilege escalation
+- Resource limitations
+- Health checks
+
+### Kubernetes Security Features
+- Network policies
+- Resource quotas
+- Security contexts
+- Service accounts
+- Secret management
+
+## Directory Structure
+```
+/
+├── Dockerfile
+├── docker-compose.yml
+├── complete-agent-deployment.yaml
+├── .env
+├── data/
+└── logs/
+```
+
+## Monitoring
+
+### Docker
+```bash
+# Container stats
+docker stats agent-api
+
+# Container logs
+docker logs -f agent-api
+
+# Container health
+docker inspect agent-api
+```
+
+### Kubernetes
+```bash
+# Pod metrics
+kubectl top pods -n agent-system
+
+# Pod logs
+kubectl logs -f deployment/agent-api -n agent-system
+
+# Deployment status
+kubectl get deployment agent-api -n agent-system -o wide
+```
+
+## Production Deployment Checklist
+
+1. Environment Configuration
+   - [ ] Set all required API keys
+   - [ ] Configure resource limits
+   - [ ] Set appropriate log levels
+
+2. Security
+   - [ ] Enable security features
+   - [ ] Configure network policies
+   - [ ] Set up secret management
+
+3. Storage
+   - [ ] Configure persistent volumes
+   - [ ] Set up backup solutions
+   - [ ] Configure log rotation
+
+4. Monitoring
+   - [ ] Set up health checks
+   - [ ] Configure logging
+   - [ ] Set up metrics collection
+
+## API Endpoints
+
+The service exposes the following endpoint:
+- `http://localhost:8000/health` - Health check endpoint
+
+## Troubleshooting
+
+### Common Issues
+
+1. Container fails to start:
+```bash
+# Check container logs
+docker logs agent-api
+
+# Check container status
+docker inspect agent-api
+```
+
+2. Permission issues:
+```bash
+# Ensure volumes have correct permissions
+chmod -R 770 data logs
+```
+
+3. Resource constraints:
+```bash
+# Check resource usage
+docker stats agent-api
+```
+
+## Support
+
+For issues and feature requests, please open an issue in the repository.
+
+## License
+
+[MIT License](LICENSE)
