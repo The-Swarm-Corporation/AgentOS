@@ -18,7 +18,7 @@ from transformers import (
     pipeline,
 )
 
-from agentos.rag import RAGSystem
+from agentos_sdk.rag import RAGSystem
 
 load_dotenv()
 

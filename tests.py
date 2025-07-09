@@ -1,12 +1,12 @@
 from pathlib import Path
 
-from agentos import (
+from agentos_sdk import (
     AgentOS,
     BrowserAgent,
     HuggingFaceAPI,
     safe_calculator,
 )
-from agentos.rag import RAGSystem
+from agentos_sdk.rag import RAGSystem
 
 
 # Test utilities

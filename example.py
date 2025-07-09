@@ -1,4 +1,4 @@
-from agentos import AgentOS
+from agentos_sdk import AgentOS
 from dotenv import load_dotenv
 
 load_dotenv()

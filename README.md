@@ -45,7 +45,7 @@ AgentOS is a lightweight, single-file implementation that provides a robust foun
 ## Installation
 
 ```bash
-pip install -r requirements.txt
+pip3 install -U agentos-sdk
 ```
 
 ## Usage
