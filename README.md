@@ -81,6 +81,8 @@ Developed by [Swarms.ai](https://swarms.ai) and partners, AgentOS represents a p
 
 ## Partners
 
+Thank you to our partners for supporting the development of the agentic operating system. Below are some of the partner projects that we use in AgentOS.
+
 | Partner Name              | Category     | RAG | LLM | Description                                      | Website                                 |
 |---------------------------|-------------|-----|-----|--------------------------------------------------|-----------------------------------------|
 | ChromaDB                  | Core Infra  | ✅  |     | Vector database for RAG and semantic search       | https://www.trychroma.com/              |
