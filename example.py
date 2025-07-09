@@ -2,6 +2,6 @@ from agentos import AgentOS
 
 agent = AgentOS()
 
-agent.add_file("README.md")
-
-agent.run("What is the main topic of the README.md file?")
+agent.run(
+    "Generate a speech about a cool bible verse. Use the generate_speech function to generate the speech."
+)

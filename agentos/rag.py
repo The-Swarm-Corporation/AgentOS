@@ -1,7 +1,6 @@
 from pathlib import Path
 from typing import List, Optional, Union, Dict, Any
 import chromadb
-from chromadb.config import Settings
 from chromadb.utils import embedding_functions
 from swarms.utils import count_tokens
 import pandas as pd
@@ -43,9 +42,7 @@ class RAGSystem:
     ):
         """Initialize the RAG system."""
         # Initialize ChromaDB client
-        self.client = chromadb.Client(
-            Settings(chroma_db_impl="duckdb+parquet", persist_directory=".chroma")
-        )
+        self.client = chromadb.Client()
 
         # Set up the embedding function
         self.embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(

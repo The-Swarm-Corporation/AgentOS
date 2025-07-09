@@ -941,6 +941,7 @@ class AgentOS:
                 call_models_on_litellm,
                 safe_calculator,
                 call_terminal_developer_agent,
+                generate_speech,
             ],
             dynamic_temperature_enabled=True,
             print_on=True,
@@ -1066,6 +1067,21 @@ class AgentOS:
             error_msg = f"Error running AgentOS: {str(e)}"
             print(error_msg)  # Print error for immediate feedback
             return error_msg  # Return error message instead of None
+
+    def batched_run(
+        self,
+        tasks: List[str],
+        imgs: List[str] = None,
+        videos: List[str] = None,
+        audios: List[str] = None,
+    ):
+        """
+        Execute a list of tasks in a batched manner.
+        """
+        outputs = []
+        for task, img, video, audio in zip(tasks, imgs, videos, audios):
+            outputs.append(self.run(task, img, video, audio))
+        return outputs
 
 
 # if __name__ == "__main__":
