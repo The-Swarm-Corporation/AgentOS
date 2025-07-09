@@ -1,21 +1,27 @@
-from swarms import Agent
-
-
 import asyncio
+import os
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
 
+import anyio
+import torch
 from browser_use import Agent as BrowserAgentBase
+from claude_code_sdk import ClaudeCodeOptions, Message, query
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
+from litellm import completion, speech
+from swarms import Agent
+from swarms.structs.ma_utils import models
 from transformers import (
-    AutoTokenizer,
     AutoModelForCausalLM,
+    AutoTokenizer,
     pipeline,
 )
-import torch
-from typing import Optional, Dict, Any, List, Union
-from litellm import completion
+
+from agentos.rag import RAGSystem
 
 load_dotenv()
+
 
 
 # System prompt for AgentOS
@@ -109,9 +115,157 @@ You are AgentOS, an advanced autonomous operating system interface designed to s
 Remember: You are an integral part of the system, responsible for making intelligent decisions about resource utilization and task execution. Always strive to provide the most efficient and effective solution to user requests while maintaining system stability and security.
 """
 
+class BrowserAgent:
+    """
+    A high-level browser automation agent that executes web-based tasks using natural language instructions.
+
+    The BrowserAgent class provides a user-friendly interface for performing browser automation tasks
+    by interpreting natural language commands and executing them through a browser automation system.
+    It supports both synchronous and asynchronous execution modes, making it flexible for various
+    use cases.
+
+    Key Features:
+        - Natural language task interpretation
+        - Asynchronous and synchronous execution modes
+        - Browser automation with state management
+        - Structured JSON output for task results
+        - Error handling and recovery
+
+    Attributes:
+        agent_name (str): Name identifier for the agent instance
+        model_name (str): The language model to use for task interpretation
+
+    Example:
+        >>> agent = BrowserAgent(agent_name="MyBrowserBot")
+        >>> result = agent.run("Go to example.com and get the page title")
+        >>> print(result)  # JSON-formatted result with actions and outputs
+
+    Notes:
+        - The agent uses a language model to interpret natural language commands
+        - All browser interactions are automated and headless by default
+        - Results are returned in a structured JSON format for easy parsing
+        - The agent maintains session state across multiple commands
+        - Error handling is built in for common browser automation issues
+    """
+
+    def __init__(
+        self,
+        agent_name: str = "BrowserAgent",
+        model_name: str = "claude-3-5-sonnet-20240620",
+    ):
+        """
+        Initialize a new BrowserAgent instance.
+
+        Args:
+            agent_name (str, optional): Name identifier for this agent instance.
+                Defaults to "BrowserAgent".
+            model_name (str, optional): The language model to use for task interpretation.
+                Defaults to "claude-3-5-sonnet-20240620".
+        """
+        self.agent_name = agent_name
+
+    async def call_browser_agent(self, task: str):
+        """
+        Asynchronously executes a browser automation agent to perform a specified task.
+
+        This method creates an instance of the BrowserAgentBase, which is configured to use
+        a language model (currently hardcoded to OpenAI's GPT-4o) to interpret and execute
+        the provided task in a browser environment. The agent is run asynchronously, and upon
+        completion, the result is serialized to a JSON-formatted string with indentation for readability.
+
+        Args:
+            task (str): A natural language description of the task to be performed by the browser agent.
+                This could be anything from "search for the latest news on AI" to "fill out a web form".
+
+        Returns:
+            str: A JSON-formatted string representing the result of the browser agent's execution.
+                The structure of the JSON includes details about the actions taken, the final state,
+                and any outputs or errors encountered during execution.
+
+        Example:
+            >>> agent = BrowserAgent()
+            >>> asyncio.run(agent.call_browser_agent("Search for weather in New York"))
+            '{\n    "model_output": {...},\n    "result": [...],\n    "state": {...}\n}'
+        """
+        agent = BrowserAgentBase(
+            task=task,
+            llm=ChatOpenAI(model="gpt-4o"),
+        )
+        result = await agent.run()
+        return result.model_dump_json(indent=4)
+
+    def run(self, task: str):
+        """
+        Synchronously runs the browser agent for a given task.
+
+        This method wraps the asynchronous `call_browser_agent` method, allowing users to
+        invoke the browser agent in a blocking (synchronous) manner. It is suitable for
+        scripts or environments where asynchronous execution is not desired or supported.
+
+        Args:
+            task (str): The task description for the browser agent to perform. This should be
+                a clear, natural language instruction describing what the agent should do in the browser.
+
+        Returns:
+            str: The JSON-formatted result of the browser agent's execution, as returned by
+                `call_browser_agent`. This includes the full trace of actions, results, and state.
+
+        Example:
+            >>> result = BrowserAgent().run("Find the top 3 trending GitHub repositories")
+            >>> print(result)
+            {
+                "model_output": {...},
+                "result": [...],
+                "state": {...}
+            }
+        """
+        return asyncio.run(self.call_browser_agent(task))
+
 
 class HuggingFaceAPI:
-    """A general class to handle various Hugging Face models and tasks."""
+    """
+    A comprehensive wrapper for interacting with Hugging Face models and pipelines.
+
+    This class provides a unified interface for working with various Hugging Face models,
+    supporting multiple tasks such as text generation, question answering, and more.
+    It handles model loading, device management, and provides robust error handling.
+
+    Key Features:
+        - Automatic device selection (GPU/CPU)
+        - Pipeline-based and manual model loading
+        - Support for model quantization
+        - Flexible text generation options
+        - Robust error handling and fallback mechanisms
+
+    Attributes:
+        model_id (str): The identifier of the Hugging Face model
+        task_type (str): The type of task the model should perform
+        device (str): The device to run the model on ("cuda" or "cpu")
+        max_length (int): Maximum length for generated text
+        quantize (bool): Whether to use model quantization
+        quantization_config (dict): Configuration for model quantization
+        pipeline: The Hugging Face pipeline instance
+        model: The raw model instance (if pipeline initialization fails)
+        tokenizer: The model's tokenizer (if pipeline initialization fails)
+
+    Example:
+        >>> # Initialize for text generation
+        >>> api = HuggingFaceAPI(
+        ...     model_id="gpt2",
+        ...     task_type="text-generation",
+        ...     max_length=100
+        ... )
+        >>> # Generate text
+        >>> result = api.generate("Once upon a time")
+        >>> print(result)
+
+    Notes:
+        - The class automatically handles GPU/CPU device selection
+        - Pipeline initialization failures trigger fallback to manual model loading
+        - Error handling is built in for all operations
+        - Supports both pipeline-based and raw model interactions
+        - Memory management is handled automatically
+    """
 
     def __init__(
         self,
@@ -315,12 +469,182 @@ def call_huggingface_model(
     return model.run(task)
 
 
+async def call_terminal_developer_agent_async(
+    task: str,
+    max_turns: int = 3,
+    system_prompt: str = "You are a helpful assistant",
+    cwd: str = None,
+    allowed_tools: list = None,
+    permission_mode: str = "acceptEdits"
+):
+    """
+    Call the Claude Code terminal developer agent with the specified parameters.
+
+    Args:
+        task (str): The prompt or task to send to the agent.
+        max_turns (int): Maximum number of conversational turns. Default is 3.
+        system_prompt (str): System prompt for the agent. Default is a helpful assistant.
+        cwd (str, optional): Working directory for the agent. Default is None.
+        allowed_tools (list, optional): List of allowed tools. Default is ["Read", "Write", "Bash"].
+        permission_mode (str): Permission mode for the agent. Default is "acceptEdits".
+
+    Returns:
+        list: List of Message objects returned by the agent.
+    """
+
+    if allowed_tools is None:
+        allowed_tools = ["Read", "Write", "Bash"]
+
+    async def main():
+        messages: list[Message] = []
+        options = ClaudeCodeOptions(
+            max_turns=max_turns,
+            system_prompt=system_prompt,
+            cwd=Path(cwd) if cwd else None,
+            allowed_tools=allowed_tools,
+            permission_mode=permission_mode
+        )
+        async for message in query(prompt=task, options=options):
+            messages.append(message)
+        return messages
+
+    return await main()
+
+
+def call_terminal_developer_agent(
+    task: str,
+    max_turns: int = 3,
+    system_prompt: str = "You are a helpful assistant",
+    cwd: str = None,
+    allowed_tools: list = None,
+    permission_mode: str = "acceptEdits"
+) -> list:
+    """
+    Call the Claude Code terminal developer agent with the specified parameters. This Terminal developer agent
+    can transform feature descriptions into code, build entire applications, and much much more.
+
+    Args:
+        task (str): The prompt or task to send to the agent. This should be a clear instruction
+            or question that the agent can act upon.
+        max_turns (int, optional): Maximum number of conversational turns the agent can take.
+            Defaults to 3. Higher values allow for more complex multi-step interactions.
+        system_prompt (str, optional): System-level prompt that defines the agent's behavior and role.
+            Defaults to "You are a helpful assistant".
+        cwd (str, optional): Working directory for the agent to operate in. If None, uses the
+            current working directory. Defaults to None.
+        allowed_tools (list, optional): List of tools the agent is allowed to use.
+            Defaults to ["Read", "Write", "Bash"] if None is provided.
+        permission_mode (str, optional): Controls how the agent handles permissions for actions.
+            Defaults to "acceptEdits". Other options may be available based on the agent's configuration.
+
+    Returns:
+        list: A list of Message objects containing the agent's responses and actions.
+            Each Message object contains the details of the agent's interactions and outputs.
+
+    Example:
+        >>> messages = call_terminal_developer_agent_sync(
+        ...     task="Create a new Python file that prints 'Hello World'",
+        ...     max_turns=2,
+        ...     cwd="/path/to/project"
+        ... )
+        >>> for msg in messages:
+        ...     print(f"Agent action: {msg.content}")
+
+    Notes:
+        - This function uses asyncio.run() internally to run the async version
+        - The function blocks until the agent completes its task or reaches max_turns
+        - All exceptions from the async version are propagated to the caller
+        - The returned messages can be used to track the agent's actions and reasoning
+    """
+    return asyncio.run(
+        call_terminal_developer_agent_async(
+            task=task,
+            max_turns=max_turns,
+            system_prompt=system_prompt,
+            cwd=cwd,
+            allowed_tools=allowed_tools,
+            permission_mode=permission_mode
+        )
+    )
+
+
+
 def list_models_on_litellm():
     """
-    List all models supported by litellm.
-    """
-    
+    List all models supported by the litellm library.
 
+    This function retrieves a comprehensive list of all language models available through
+    the litellm library. The list includes models from various providers such as OpenAI,
+    Anthropic, and others that are supported by litellm's unified interface.
+
+    Returns:
+        List[str]: A list of model identifiers that can be used with litellm.
+            Each identifier is a string that can be passed to call_models_on_litellm().
+
+    Example:
+        >>> models = list_models_on_litellm()
+        >>> print("Available models:")
+        >>> for model in models:
+        ...     print(f"- {model}")
+
+    Notes:
+        - The list of available models may change based on your litellm version
+        - Some models may require specific API keys or authentication
+        - Models may have different capabilities and token limits
+        - Check litellm's documentation for the most up-to-date model list
+    """
+    from litellm import model_list
+    
+    return model_list
+
+
+
+def generate_speech(
+    text: str,
+    voice: Optional[str] = "alloy",
+    model: Optional[str] = "openai/tts-1",
+    file_path: Optional[str] = "speech.mp3"
+):
+    """
+    Generate speech audio from text using a specified voice and model.
+
+    This function converts the provided text into speech using the OpenAI TTS API (or any compatible model via LiteLLM).
+    It saves the generated audio to the specified file path.
+
+    Example usage:
+        >>> audio_path = generate_speech(
+        ...     text="Hello, world!",
+        ...     voice="alloy",
+        ...     model="openai/tts-1",
+        ...     file_path="hello.mp3"
+        ... )
+        >>> print(f"Audio saved at: {audio_path}")
+
+    Args:
+        text (str): The text to be converted into speech.
+        voice (str, optional): The voice to use for speech synthesis. Defaults to "alloy".
+        model (str, optional): The speech synthesis model to use. Defaults to "openai/tts-1".
+        file_path (str, optional): The path where the generated audio file will be saved. Defaults to "speech.mp3".
+
+    Returns:
+        Path: The path to the generated speech audio file.
+
+    Notes for the model:
+        - You can use this function to generate speech from any text output.
+        - If a user requests audio output, call this function with the desired text.
+        - The function supports different voices and models if available.
+        - The resulting audio file can be played back or sent to the user.
+
+    """
+
+    speech_file_path = Path(__file__).parent / file_path
+    response = speech(
+        model=model,
+        voice=voice,
+        input=text,
+    )
+    response.stream_to_file(speech_file_path)
+    return speech_file_path
 
 def call_models_on_litellm(
     model_name: str,
@@ -483,77 +807,49 @@ def safe_calculator(expression: str) -> str:
         return f"Error: {str(e)}"
 
 
-class BrowserAgent:
-    def __init__(
-        self,
-        agent_name: str = "BrowserAgent",
-        model_name: str = "claude-3-5-sonnet-20240620",
-    ):
-        self.agent_name = agent_name
-
-    async def call_browser_agent(self, task: str):
-        """
-        Asynchronously executes a browser automation agent to perform a specified task.
-
-        This method creates an instance of the BrowserAgentBase, which is configured to use
-        a language model (currently hardcoded to OpenAI's GPT-4o) to interpret and execute
-        the provided task in a browser environment. The agent is run asynchronously, and upon
-        completion, the result is serialized to a JSON-formatted string with indentation for readability.
-
-        Args:
-            task (str): A natural language description of the task to be performed by the browser agent.
-                This could be anything from "search for the latest news on AI" to "fill out a web form".
-
-        Returns:
-            str: A JSON-formatted string representing the result of the browser agent's execution.
-                The structure of the JSON includes details about the actions taken, the final state,
-                and any outputs or errors encountered during execution.
-
-        Example:
-            >>> agent = BrowserAgent()
-            >>> asyncio.run(agent.call_browser_agent("Search for weather in New York"))
-            '{\n    "model_output": {...},\n    "result": [...],\n    "state": {...}\n}'
-        """
-        agent = BrowserAgentBase(
-            task=task,
-            llm=ChatOpenAI(model="gpt-4o"),
-        )
-        result = await agent.run()
-        return result.model_dump_json(indent=4)
-
-    def run(self, task: str):
-        """
-        Synchronously runs the browser agent for a given task.
-
-        This method wraps the asynchronous `call_browser_agent` method, allowing users to
-        invoke the browser agent in a blocking (synchronous) manner. It is suitable for
-        scripts or environments where asynchronous execution is not desired or supported.
-
-        Args:
-            task (str): The task description for the browser agent to perform. This should be
-                a clear, natural language instruction describing what the agent should do in the browser.
-
-        Returns:
-            str: The JSON-formatted result of the browser agent's execution, as returned by
-                `call_browser_agent`. This includes the full trace of actions, results, and state.
-
-        Example:
-            >>> result = BrowserAgent().run("Find the top 3 trending GitHub repositories")
-            >>> print(result)
-            {
-                "model_output": {...},
-                "result": [...],
-                "state": {...}
-            }
-        """
-        return asyncio.run(self.call_browser_agent(task))
-
 
 def process_video_with_gemini(
     video_path: str = None,
     task: str = "Create a detailed and comprehensive summary of the video",
     model_name: str = "gemini-2.0-flash",
 ):
+    """
+    Process a video file using Google's Gemini model for analysis and understanding.
+
+    This function uploads a video file to Google's Gemini model and processes it according
+    to the specified task. It can perform various video analysis tasks such as:
+    - Summarization
+    - Object detection
+    - Action recognition
+    - Scene understanding
+    - Content analysis
+
+    Args:
+        video_path (str, optional): Path to the video file to be processed.
+            If None, the function will raise an error. Defaults to None.
+        task (str, optional): The specific task or instruction for video analysis.
+            Defaults to "Create a detailed and comprehensive summary of the video".
+        model_name (str, optional): The specific Gemini model version to use.
+            Defaults to "gemini-2.0-flash".
+
+    Returns:
+        None: The function prints the model's response directly to stdout.
+            Future versions may return the response instead of printing.
+
+    Example:
+        >>> process_video_with_gemini(
+        ...     video_path="path/to/video.mp4",
+        ...     task="Identify all people and their actions in the video",
+        ...     model_name="gemini-2.0-flash"
+        ... )
+
+    Notes:
+        - Requires the 'google.generativeai' package to be installed
+        - Needs proper authentication set up for Google's API
+        - Video file size and format limitations apply based on Gemini's constraints
+        - Processing time depends on video length and complexity
+        - The model's response is printed to stdout (may be changed in future versions)
+    """
     from google import genai
 
     client = genai.Client()
@@ -603,13 +899,50 @@ def run_browser_agent(task: str) -> str:
 
 
 class AgentOS:
+    """
+    AgentOS: A comprehensive autonomous operating system interface for managing and coordinating multiple computational resources.
+
+    This class serves as the main interface for the AgentOS system, providing capabilities for:
+    1. Task execution using various language models
+    2. Browser automation
+    3. Document retrieval and context management (RAG)
+    4. Multi-modal processing (text, image, video, audio)
+
+    The system is designed to be highly modular and extensible, allowing for easy integration
+    of new capabilities and tools while maintaining a consistent interface for users.
+
+    Attributes:
+        model_name (str): The name of the primary language model to use
+        system_prompt (str): The system prompt that defines the agent's behavior
+        rag_system (RAGSystem): The retrieval-augmented generation system for document context
+        rag_chunk_size (int): Size of chunks for document processing in RAG
+        rag_collection_name (str): Name of the RAG document collection
+
+    Example:
+        >>> agent = AgentOS(model_name="gpt-4o-mini")
+        >>> result = agent.run("Summarize the contents of document.pdf")
+        >>> print(result)
+
+    Notes:
+        - The agent automatically initializes with a RAG system for document processing
+        - Multiple tools are available including browser automation and model calling
+        - The system can handle multi-modal inputs (text, images, video, audio)
+        - Error handling is built-in for robustness
+    """
+
     def __init__(
         self,
         model_name: str = "gpt-4o-mini",
         system_prompt: str = AGENT_OS_SYSTEM_PROMPT,
+        rag_system: Optional[RAGSystem] = None,
+        rag_chunk_size: int = 1000,
+        rag_collection_name: str = "agentos_docs",
     ):
         self.model_name = model_name
         self.system_prompt = system_prompt
+        self.rag_system = rag_system
+        self.rag_chunk_size = rag_chunk_size
+        self.rag_collection_name = rag_collection_name
 
         self.agent = Agent(
             model_name=model_name,
@@ -621,10 +954,67 @@ class AgentOS:
                 call_huggingface_model,
                 call_models_on_litellm,
                 safe_calculator,
+                call_terminal_developer_agent,
             ],
             dynamic_temperature_enabled=True,
             print_on=True,
         )
+        
+        self.rag_system = self.setup_rag()
+        
+    def setup_rag(self):
+        """
+        Set up the Retrieval-Augmented Generation (RAG) system.
+
+        This method initializes the RAG system with the configured collection name and chunk size.
+        The RAG system is used to provide relevant context from stored documents when processing tasks.
+
+        Returns:
+            RAGSystem: Initialized RAG system ready for document processing and retrieval.
+        """
+        return RAGSystem(
+            collection_name=self.rag_collection_name,
+            chunk_size=self.rag_chunk_size,
+        )
+        
+    def add_file(self, file_path: str):
+        """
+        Add a single file to the RAG system's document collection.
+
+        Args:
+            file_path (str): Path to the file to be added to the RAG system.
+                Supported formats depend on the RAG system's capabilities.
+        """
+        self.rag_system.add_document(file_path)
+        
+    def add_multiple_documents(self, file_paths: List[str]):
+        """
+        Add multiple files to the RAG system's document collection.
+
+        Args:
+            file_paths (List[str]): List of file paths to be added to the RAG system.
+                All files should be in supported formats.
+        """
+        self.rag_system.add_multiple_documents(file_paths)
+        
+    def add_folder(self, folder_path: str):
+        """
+        Add all supported files from a folder to the RAG system.
+
+        Args:
+            folder_path (str): Path to the folder containing documents to be added.
+                The system will recursively process all supported files in the folder.
+        """
+        self.rag_system.add_folder(folder_path)
+        
+    def clear_processed_files(self):
+        """
+        Clear all processed files from the RAG system.
+
+        This method removes all documents from the RAG system's collection,
+        effectively resetting its knowledge base.
+        """
+        self.rag_system.clear_processed_files()
 
     def run(
         self,
@@ -633,8 +1023,44 @@ class AgentOS:
         video: str = None,
         audio: str = None,
     ):
+        """
+        Execute a task using the AgentOS system with optional multi-modal inputs.
+
+        This method processes the given task using the configured language model and tools.
+        It can handle various types of inputs including text, images, video, and audio.
+        The system automatically retrieves relevant context from the RAG system if available.
+
+        Args:
+            task (str): The main task or query to be processed.
+            img (str, optional): Path to an image file for image-based tasks. Defaults to None.
+            video (str, optional): Path to a video file for video-based tasks. Defaults to None.
+            audio (str, optional): Path to an audio file for audio-based tasks. Defaults to None.
+
+        Returns:
+            str: The result of the task execution. If an error occurs, returns an error message.
+
+        Example:
+            >>> agent = AgentOS()
+            >>> result = agent.run(
+            ...     task="Analyze this image and summarize its contents",
+            ...     img="path/to/image.jpg"
+            ... )
+            >>> print(result)
+
+        Notes:
+            - The method automatically incorporates RAG context if available
+            - Video processing is handled by the Gemini model if video input is provided
+            - The system handles None responses gracefully
+            - Errors are caught and returned as informative messages
+        """
         try:
             task_prompt = ""
+
+            # Add RAG context if available
+            if self.rag_system:
+                context = self.rag_system.get_relevant_context(task)
+                if context:
+                    task_prompt += f"Context from knowledge base:\n{context}\n\n"
 
             if video:
                 out = process_video_with_gemini(
@@ -642,7 +1068,7 @@ class AgentOS:
                 )
                 task_prompt += f"Video Analysis Output:\n{out}\n\n"
 
-            final_output = self.agent.run(task=task_prompt or task, img=img)
+            final_output = self.agent.run(task=task_prompt + task if task_prompt else task, img=img)
             
             # Handle None response
             if final_output is None:

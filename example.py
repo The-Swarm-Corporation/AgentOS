@@ -1,5 +1,7 @@
-from agentos.main import AgentOS
+from agentos import AgentOS, RAGSystem
 
 agent = AgentOS()
 
-print(agent.run("Call claude 3.5 sonnet and tell me the weather in Tokyo"))
+agent.add_file("README.md")
+
+agent.run("What is the main topic of the README.md file?")

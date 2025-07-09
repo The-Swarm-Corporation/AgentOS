@@ -1,8 +1,15 @@
 # AgentOS
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
+
 A minimal, production-ready implementation of Andrej Karpathy's Agent Operating System architecture, developed by Swarms.ai and partners.
 
 ![AgentOS Architecture](https://miro.medium.com/v2/resize:fit:748/1*quuHoEjoCzxvu5lVp_SMEQ@2x.jpeg)
+
+
 
 ## Overview
 
@@ -57,6 +64,8 @@ Developed by [Swarms.ai](https://swarms.ai) and partners, AgentOS represents a p
 - Implement python code executor, file finder, and more
 - Implement file level embeddings
 - Implement Audio summary and analysis
+- Implement text to image and text to speech
+- Implement text to video 
 
 ## Community 
 

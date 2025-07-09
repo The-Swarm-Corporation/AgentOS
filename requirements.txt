@@ -4,3 +4,11 @@ browser-use
 transformers
 torch
 langchain-openai
+chromadb
+pypdf2
+pandas
+python-docx
+python-pptx
+beautifulsoup4
+sentence-transformers
+claude-code-sdk
