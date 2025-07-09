@@ -35,52 +35,6 @@ AgentOS is a lightweight, single-file implementation that provides a robust foun
   - Automatic model quantization and optimization
 - **Extensible Architecture**: Easy to add new capabilities and tools
 
-## Technology Partners
-
-AgentOS integrates with several best-in-class technologies to provide comprehensive capabilities:
-
-### Core Infrastructure
-- **ChromaDB**: Powers our RAG (Retrieval Augmented Generation) system
-  - Vector database for document embeddings
-  - Efficient semantic search capabilities
-  - Support for multiple file types (txt, pdf, csv, docx, pptx, json, html)
-  - Automatic text chunking and token management
-
-### Language Models & AI
-- **Anthropic Claude**: Advanced language model integration
-  - Code generation and analysis
-  - Complex reasoning tasks
-  - Latest Claude 3 models (Opus, Sonnet, Haiku)
-
-- **LiteLLM**: Unified interface for multiple LLM providers
-  - Standardized API across different models
-  - Automatic token limit handling
-  - Built-in error handling and retries
-
-- **HuggingFace Transformers**: Access to open-source AI models
-  - Local model execution capabilities
-  - Support for multiple NLP tasks
-  - Automatic device optimization (GPU/CPU)
-
-### Development Tools
-- **Claude Code SDK**: Powerful code generation and manipulation
-  - Secure code execution
-  - File system operations
-  - Terminal command execution
-
-### Browser Automation
-- **Browser-Use**: Advanced web automation capabilities
-  - Natural language task interpretation
-  - Headless browser operation
-  - Session state management
-
-### Document Processing
-- **PyPDF2**: PDF document processing
-- **python-docx**: Word document handling
-- **python-pptx**: PowerPoint file processing
-- **BeautifulSoup4**: HTML parsing and processing
-- **Pandas**: Structured data handling
-
 ## Core Components
 
 - **Model Management**: Dynamic selection and utilization of language models
@@ -122,6 +76,27 @@ Developed by [Swarms.ai](https://swarms.ai) and partners, AgentOS represents a p
 - Implement Audio summary and analysis
 - Implement text to image and text to speech
 - Implement text to video 
+
+
+
+## Technology Partners
+
+AgentOS integrates with several best-in-class technologies to provide comprehensive capabilities:
+
+| Category                | Technology                | Description/Capabilities                                                                                                                                         |
+|-------------------------|--------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Core Infrastructure** | **ChromaDB**             | - Powers our RAG (Retrieval Augmented Generation) system<br>- Vector database for document embeddings<br>- Efficient semantic search capabilities<br>- Support for multiple file types (txt, pdf, csv, docx, pptx, json, html)<br>- Automatic text chunking and token management |
+| **Language Models & AI**| **Anthropic Claude**     | - Advanced language model integration<br>- Code generation and analysis<br>- Complex reasoning tasks<br>- Latest Claude 3 models (Opus, Sonnet, Haiku)           |
+|                         | **LiteLLM**              | - Unified interface for multiple LLM providers<br>- Standardized API across different models<br>- Automatic token limit handling<br>- Built-in error handling and retries |
+|                         | **HuggingFace Transformers** | - Access to open-source AI models<br>- Local model execution capabilities<br>- Support for multiple NLP tasks<br>- Automatic device optimization (GPU/CPU)      |
+| **Development Tools**   | **Claude Code SDK**      | - Powerful code generation and manipulation<br>- Secure code execution<br>- File system operations<br>- Terminal command execution                                |
+| **Browser Automation**  | **Browser-Use**          | - Advanced web automation capabilities<br>- Natural language task interpretation<br>- Headless browser operation<br>- Session state management                   |
+| **Document Processing** | **PyPDF2**               | - PDF document processing                                                                                                                                        |
+|                         | **python-docx**          | - Word document handling                                                                                                                                         |
+|                         | **python-pptx**          | - PowerPoint file processing                                                                                                                                     |
+|                         | **BeautifulSoup4**       | - HTML parsing and processing                                                                                                                                    |
+|                         | **Pandas**               | - Structured data handling                                                                                                                                       |
+
 
 ## Community 
 
