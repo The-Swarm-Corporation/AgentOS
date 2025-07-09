@@ -1,7 +1,9 @@
+import json
+from loguru import logger
 import asyncio
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
-
+from swarms.utils.formatter import formatter 
 import torch
 from browser_use import Agent as BrowserAgentBase
 from claude_code_sdk import ClaudeCodeOptions, Message, query
@@ -474,11 +476,11 @@ async def call_terminal_developer_agent_async(
         permission_mode (str): Permission mode for the agent. Default is "acceptEdits".
 
     Returns:
-        list: List of Message objects returned by the agent.
+        list: List of serialized Message objects returned by the agent.
     """
 
-    if allowed_tools is None:
-        allowed_tools = ["Read", "Write", "Bash"]
+    # if allowed_tools is None:
+    allowed_tools = ["Read", "Write", "Bash"]
 
     async def main():
         messages: list[Message] = []
@@ -491,7 +493,28 @@ async def call_terminal_developer_agent_async(
         )
         async for message in query(prompt=task, options=options):
             messages.append(message)
-        return messages
+            logger.info(f"Claude Code Terminal Developer Agent Message: {message}")
+        
+        # Convert messages to serializable format
+        serialized_messages = []
+        for msg in messages:
+            try:
+                # Try to get message attributes
+                msg_dict = {
+                    "type": msg.type if hasattr(msg, "type") else None,
+                    "content": msg.content if hasattr(msg, "content") else None,
+                    "role": msg.role if hasattr(msg, "role") else None,
+                    "metadata": msg.metadata if hasattr(msg, "metadata") else None
+                }
+                # Remove None values
+                msg_dict = {k: v for k, v in msg_dict.items() if v is not None}
+                serialized_messages.append(msg_dict)
+            except Exception as e:
+                logger.error(f"Error serializing message: {e}")
+                # Include basic string representation if serialization fails
+                serialized_messages.append({"content": str(msg)})
+        
+        return json.dumps(serialized_messages, indent=2)
 
     return await main()
 
@@ -503,7 +526,7 @@ def call_terminal_developer_agent(
     cwd: str = None,
     allowed_tools: list = None,
     permission_mode: str = "acceptEdits",
-) -> list:
+) -> str:
     """
     Call the Claude Code terminal developer agent with the specified parameters. This Terminal developer agent
     can transform feature descriptions into code, build entire applications, and much much more.
@@ -523,17 +546,16 @@ def call_terminal_developer_agent(
             Defaults to "acceptEdits". Other options may be available based on the agent's configuration.
 
     Returns:
-        list: A list of Message objects containing the agent's responses and actions.
+        str: A JSON string containing the list of serialized Message objects with the agent's responses and actions.
             Each Message object contains the details of the agent's interactions and outputs.
 
     Example:
-        >>> messages = call_terminal_developer_agent_sync(
+        >>> messages = call_terminal_developer_agent(
         ...     task="Create a new Python file that prints 'Hello World'",
         ...     max_turns=2,
         ...     cwd="/path/to/project"
         ... )
-        >>> for msg in messages:
-        ...     print(f"Agent action: {msg.content}")
+        >>> print(messages)  # Returns JSON string of messages
 
     Notes:
         - This function uses asyncio.run() internally to run the async version
@@ -541,7 +563,9 @@ def call_terminal_developer_agent(
         - All exceptions from the async version are propagated to the caller
         - The returned messages can be used to track the agent's actions and reasoning
     """
-    return asyncio.run(
+    import json
+    logger.info(f"Calling terminal developer agent with task: {task}")
+    output = asyncio.run(
         call_terminal_developer_agent_async(
             task=task,
             max_turns=max_turns,
@@ -551,6 +575,7 @@ def call_terminal_developer_agent(
             permission_mode=permission_mode,
         )
     )
+    return json.dumps(output, indent=2)
 
 
 def list_models_on_litellm():
@@ -923,31 +948,59 @@ class AgentOS:
         rag_system: Optional[RAGSystem] = None,
         rag_chunk_size: int = 1000,
         rag_collection_name: str = "agentos_docs",
+        artifacts_folder: str = "artifacts",
     ):
         self.model_name = model_name
         self.system_prompt = system_prompt
         self.rag_system = rag_system
         self.rag_chunk_size = rag_chunk_size
         self.rag_collection_name = rag_collection_name
+        
+
+        tools = [
+            run_browser_agent,
+            call_huggingface_model,
+            call_models_on_litellm,
+            safe_calculator,
+            call_terminal_developer_agent,
+            generate_speech,
+        ]
 
         self.agent = Agent(
             model_name=model_name,
             system_prompt=system_prompt,
             agent_name="AgentOS",
             description="An agent that can perform OS-level tasks",
-            tools=[
-                run_browser_agent,
-                call_huggingface_model,
-                call_models_on_litellm,
-                safe_calculator,
-                call_terminal_developer_agent,
-                generate_speech,
-            ],
             dynamic_temperature_enabled=True,
+            tools=tools,
             print_on=True,
         )
 
         self.rag_system = self.setup_rag()
+        
+    def setup_agent_os(self):
+        title = f"""
+        Welcome to AgentOS
+        
+        AgentOS is a comprehensive autonomous operating system interface for managing and coordinating multiple computational resources. 
+        AgentOS is designed to be highly modular and extensible, allowing for easy integration of new capabilities and tools while maintaining a consistent interface for users.
+        
+        Tools available:
+        - [Tool 1][Browser Agent][Description: The Browser Agent is a tool that can be used to navigate the web and perform tasks on the web.]
+        - [Tool 2][Hugging Face Model][Description: The Hugging Face Model is a tool that can be used to generate text using a Hugging Face model.]
+        - [Tool 3][Litellm Model][Description: The Litellm Model is a tool that can be used to generate text using a Litellm model.]
+        - [Tool 4][Safe Calculator][Description: The Safe Calculator is a tool that can be used to perform calculations.]
+        - [Tool 5][Terminal Developer Agent][Description: The Terminal Developer Agent is a tool that can be used to perform terminal tasks.]
+        - [Tool 6][Generate Speech][Description: The Generate Speech is a tool that can be used to generate speech.]
+        
+        Tutorial:
+        
+        Simply provide the task you want to perform and the agent will perform it. The more specific the task, the better the result.
+        """
+        formatter.print_panel(
+            content=title,
+            title="AgentOS",
+        )
 
     def setup_rag(self):
         """
