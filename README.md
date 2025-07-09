@@ -47,28 +47,36 @@ result = agent_os.run(
 )
 ```
 
-## Supported Models
-
-### Anthropic Claude Models
-- claude-opus-4-20250514
-- claude-sonnet-4-20250514
-- claude-3-sonnet-20240229
-- claude-3-haiku-20240307
-- And more...
-
-### OpenAI GPT Models
-- gpt-4-1106-preview
-- gpt-4-vision-preview
-- gpt-3.5-turbo
-- And more...
-
 ## License
 
-[License details]
+This is under a MIT License
 
 ## About
 
 Developed by [Swarms.ai](https://swarms.ai) and partners, AgentOS represents a production-ready implementation of autonomous AI agents, following the architectural principles outlined by Andrej Karpathy.
+
+## Todo
+
+- Implement python code executor, file finder, and more
+- Implement file level embeddings
+- Implement Audio summary and analysis
+
+## Community 
+
+Join our community of agent engineers and researchers for technical support, cutting-edge updates, and exclusive access to world-class agent engineering insights!
+
+| Platform | Description | Link |
+|----------|-------------|------|
+| 📚 Documentation | Official documentation and guides | [docs.swarms.world](https://docs.swarms.world) |
+| 📝 Blog | Latest updates and technical articles | [Medium](https://medium.com/@kyeg) |
+| 💬 Discord | Live chat and community support | [Join Discord](https://discord.gg/jM3Z6M9uMq) |
+| 🐦 Twitter | Latest news and announcements | [@kyegomez](https://twitter.com/kyegomez) |
+| 👥 LinkedIn | Professional network and updates | [The Swarm Corporation](https://www.linkedin.com/company/the-swarm-corporation) |
+| 📺 YouTube | Tutorials and demos | [Swarms Channel](https://www.youtube.com/channel/UC9yXyitkbU_WSy7bd_41SqQ) |
+| 🎫 Events | Join our community events | [Sign up here](https://lu.ma/5p2jnc2v) |
+| 🚀 Onboarding Session | Get onboarded with Kye Gomez, creator and lead maintainer of Swarms | [Book Session](https://cal.com/swarms/swarms-onboarding-session) |
+
+
 
 ## Contributing
 

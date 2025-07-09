@@ -411,6 +411,78 @@ def call_models_on_litellm(
     return response.choices[0].message.content
 
 
+def safe_calculator(expression: str) -> str:
+    """
+    Safely evaluate mathematical expressions and perform calculations.
+
+    This function provides a secure way to evaluate mathematical expressions by:
+    1. Only allowing basic mathematical operations and numbers
+    2. Sanitizing input to prevent code injection
+    3. Handling division by zero and other mathematical errors
+
+    Args:
+        expression (str): A mathematical expression as a string.
+            Examples:
+            - "2 + 2"
+            - "10 * 5"
+            - "(3 + 4) * 2"
+            - "10 / 2"
+            - "2 ** 3"  # Exponentiation
+            - "9 % 4"   # Modulo
+
+    Returns:
+        str: The result of the calculation as a string, or an error message if:
+            - The expression is invalid
+            - Division by zero is attempted
+            - The expression contains unauthorized operations
+            - Any other mathematical error occurs
+
+    Examples:
+        >>> safe_calculator("2 + 2")
+        '4'
+        >>> safe_calculator("(3 + 4) * 2")
+        '14'
+        >>> safe_calculator("10 / 0")
+        'Error: Division by zero'
+        >>> safe_calculator("import os")
+        'Error: Invalid expression'
+    """
+    # List of allowed characters
+    allowed_chars = set("0123456789.+-*/(). %")
+    # Remove all whitespace
+    expression = ''.join(expression.split())
+    
+    # Check if expression only contains allowed characters
+    if not all(c in allowed_chars for c in expression):
+        return "Error: Invalid expression - only basic mathematical operations are allowed"
+    
+    try:
+        # Additional security check for potentially dangerous expressions
+        if any(keyword in expression.lower() for keyword in ['eval', 'exec', 'import', '__']):
+            return "Error: Invalid expression"
+            
+        # Evaluate the expression
+        result = eval(expression, {"__builtins__": {}}, {})
+        
+        # Format the result
+        if isinstance(result, (int, float)):
+            # Handle very large or very small numbers
+            if abs(result) > 1e15 or (abs(result) < 1e-15 and result != 0):
+                return f"{result:.2e}"
+            # For regular floats, limit decimal places
+            elif isinstance(result, float):
+                return f"{result:.6f}".rstrip('0').rstrip('.')
+            return str(result)
+        return "Error: Invalid result type"
+        
+    except ZeroDivisionError:
+        return "Error: Division by zero"
+    except (SyntaxError, NameError, TypeError):
+        return "Error: Invalid expression"
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+
 class BrowserAgent:
     def __init__(
         self,
@@ -548,7 +620,8 @@ class AgentOS:
                 run_browser_agent,
                 call_huggingface_model,
                 call_models_on_litellm,
-            ],  # Add HuggingFace API as a tool
+                safe_calculator,
+            ],
             dynamic_temperature_enabled=True,
             print_on=True,
         )
