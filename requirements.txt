@@ -1,6 +1,6 @@
-uvicorn
-python-dotenv
-fastapi
-loguru
-pydantic
 swarms
+litellm
+browser-use
+transformers
+torch
+langchain-openai
