@@ -4,7 +4,7 @@ from loguru import logger
 import asyncio
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
-from swarms.utils.formatter import formatter 
+from swarms.utils.formatter import formatter
 import torch
 from browser_use import Agent as BrowserAgentBase
 from claude_code_sdk import ClaudeCodeOptions, Message, query
@@ -291,7 +291,9 @@ class HuggingFaceAPI:
         """
         self.model_id = model_id
         self.task_type = task_type
-        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device or (
+            "cuda" if torch.cuda.is_available() else "cpu"
+        )
         self.max_length = max_length
         self.quantize = quantize
         self.quantization_config = quantization_config or {}
@@ -310,7 +312,11 @@ class HuggingFaceAPI:
             self.model = AutoModelForCausalLM.from_pretrained(
                 model_id,
                 device_map=self.device,
-                torch_dtype=(torch.float16 if self.device == "cuda" else torch.float32),
+                torch_dtype=(
+                    torch.float16
+                    if self.device == "cuda"
+                    else torch.float32
+                ),
                 **kwargs,
             )
             self.tokenizer = AutoTokenizer.from_pretrained(model_id)
@@ -346,7 +352,9 @@ class HuggingFaceAPI:
 
                 if isinstance(outputs, list):
                     if self.task_type == "text-generation":
-                        return [out["generated_text"] for out in outputs]
+                        return [
+                            out["generated_text"] for out in outputs
+                        ]
                     return outputs
                 return (
                     outputs["generated_text"]
@@ -355,14 +363,18 @@ class HuggingFaceAPI:
                 )
 
             # Manual generation if pipeline is not available
-            inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
+            inputs = self.tokenizer(prompt, return_tensors="pt").to(
+                self.device
+            )
             outputs = self.model.generate(
                 **inputs,
                 max_length=max_length or self.max_length,
                 num_return_sequences=num_return_sequences,
                 **kwargs,
             )
-            return self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
+            return self.tokenizer.batch_decode(
+                outputs, skip_special_tokens=True
+            )
 
         except Exception as e:
             print(f"Error in generation: {e}")
@@ -494,27 +506,43 @@ async def call_terminal_developer_agent_async(
         )
         async for message in query(prompt=task, options=options):
             messages.append(message)
-            logger.info(f"Claude Code Terminal Developer Agent Message: {message}")
-        
+            logger.info(
+                f"Claude Code Terminal Developer Agent Message: {message}"
+            )
+
         # Convert messages to serializable format
         serialized_messages = []
         for msg in messages:
             try:
                 # Try to get message attributes
                 msg_dict = {
-                    "type": msg.type if hasattr(msg, "type") else None,
-                    "content": msg.content if hasattr(msg, "content") else None,
-                    "role": msg.role if hasattr(msg, "role") else None,
-                    "metadata": msg.metadata if hasattr(msg, "metadata") else None
+                    "type": (
+                        msg.type if hasattr(msg, "type") else None
+                    ),
+                    "content": (
+                        msg.content
+                        if hasattr(msg, "content")
+                        else None
+                    ),
+                    "role": (
+                        msg.role if hasattr(msg, "role") else None
+                    ),
+                    "metadata": (
+                        msg.metadata
+                        if hasattr(msg, "metadata")
+                        else None
+                    ),
                 }
                 # Remove None values
-                msg_dict = {k: v for k, v in msg_dict.items() if v is not None}
+                msg_dict = {
+                    k: v for k, v in msg_dict.items() if v is not None
+                }
                 serialized_messages.append(msg_dict)
             except Exception as e:
                 logger.error(f"Error serializing message: {e}")
                 # Include basic string representation if serialization fails
                 serialized_messages.append({"content": str(msg)})
-        
+
         return json.dumps(serialized_messages, indent=2)
 
     return await main()
@@ -565,6 +593,7 @@ def call_terminal_developer_agent(
         - The returned messages can be used to track the agent's actions and reasoning
     """
     import json
+
     logger.info(f"Calling terminal developer agent with task: {task}")
     output = asyncio.run(
         call_terminal_developer_agent_async(
@@ -788,9 +817,7 @@ def safe_calculator(expression: str) -> str:
 
     # Check if expression only contains allowed characters
     if not all(c in allowed_chars for c in expression):
-        return (
-            "Error: Invalid expression - only basic mathematical operations are allowed"
-        )
+        return "Error: Invalid expression - only basic mathematical operations are allowed"
 
     try:
         # Additional security check for potentially dangerous expressions
@@ -806,7 +833,9 @@ def safe_calculator(expression: str) -> str:
         # Format the result
         if isinstance(result, (int, float)):
             # Handle very large or very small numbers
-            if abs(result) > 1e15 or (abs(result) < 1e-15 and result != 0):
+            if abs(result) > 1e15 or (
+                abs(result) < 1e-15 and result != 0
+            ):
                 return f"{result:.2e}"
             # For regular floats, limit decimal places
             elif isinstance(result, float):
@@ -870,7 +899,9 @@ def process_video_with_gemini(
 
     myfile = client.files.upload(file=video_path)
 
-    response = client.models.generate_content(model=model_name, contents=[myfile, task])
+    response = client.models.generate_content(
+        model=model_name, contents=[myfile, task]
+    )
 
     print(response.text)
 
@@ -909,6 +940,7 @@ def run_browser_agent(task: str) -> str:
     model: BrowserAgent = BrowserAgent()
     return model.run(task)
 
+
 def respond_to_user(response: str):
     """
     Respond to the user and don't use any tools.
@@ -929,8 +961,9 @@ def respond_to_user(response: str):
         content=response,
         title="AgentOS Response",
     )
-    
+
     return response
+
 
 class AgentOS:
     """
@@ -979,9 +1012,8 @@ class AgentOS:
         self.rag_chunk_size = rag_chunk_size
         self.rag_collection_name = rag_collection_name
         self.artifacts_folder = artifacts_folder
-        
+
         self.setup_agent_os()
-        
 
         tools = [
             run_browser_agent,
@@ -1004,9 +1036,9 @@ class AgentOS:
         )
 
         self.rag_system = self.setup_rag()
-        
+
     def setup_agent_os(self):
-        title = f"""
+        title = """
         Welcome to AgentOS
         
         AgentOS is a comprehensive autonomous operating system interface for managing and coordinating multiple computational resources. 
@@ -1127,14 +1159,19 @@ class AgentOS:
             if self.rag_system:
                 context = self.rag_system.get_relevant_context(task)
                 if context:
-                    task_prompt += f"Context from knowledge base:\n{context}\n\n"
+                    task_prompt += (
+                        f"Context from knowledge base:\n{context}\n\n"
+                    )
 
             if video:
-                out = process_video_with_gemini(video_path=video, task=task)
+                out = process_video_with_gemini(
+                    video_path=video, task=task
+                )
                 task_prompt += f"Video Analysis Output:\n{out}\n\n"
 
             final_output = self.agent.run(
-                task=task_prompt + task if task_prompt else task, img=img
+                task=task_prompt + task if task_prompt else task,
+                img=img,
             )
 
             # Handle None response
@@ -1144,7 +1181,9 @@ class AgentOS:
             return final_output
 
         except Exception as e:
-            logger.error(f"Error running AgentOS: {str(e)} Traceback: {traceback.format_exc()}")
+            logger.error(
+                f"Error running AgentOS: {str(e)} Traceback: {traceback.format_exc()}"
+            )
 
     def batched_run(
         self,
@@ -1157,7 +1196,9 @@ class AgentOS:
         Execute a list of tasks in a batched manner.
         """
         outputs = []
-        for task, img, video, audio in zip(tasks, imgs, videos, audios):
+        for task, img, video, audio in zip(
+            tasks, imgs, videos, audios
+        ):
             outputs.append(self.run(task, img, video, audio))
         return outputs
 

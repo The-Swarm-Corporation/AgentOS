@@ -1,6 +1,11 @@
 from pathlib import Path
 
-from agentos import AgentOS, BrowserAgent, HuggingFaceAPI, safe_calculator
+from agentos import (
+    AgentOS,
+    BrowserAgent,
+    HuggingFaceAPI,
+    safe_calculator,
+)
 from agentos.rag import RAGSystem
 
 
@@ -8,13 +13,17 @@ from agentos.rag import RAGSystem
 def assert_equal(actual, expected, message=""):
     """Custom assertion helper"""
     if actual != expected:
-        raise AssertionError(f"{message}\nExpected: {expected}\nActual: {actual}")
+        raise AssertionError(
+            f"{message}\nExpected: {expected}\nActual: {actual}"
+        )
 
 
 def assert_true(condition, message=""):
     """Custom assertion helper for boolean conditions"""
     if not condition:
-        raise AssertionError(f"{message}\nExpected True but got False")
+        raise AssertionError(
+            f"{message}\nExpected True but got False"
+        )
 
 
 def assert_raises(exception_type, func, *args, **kwargs):
@@ -35,17 +44,31 @@ def test_rag_initialization():
 
     # Test default initialization
     rag = RAGSystem()
-    assert_true(rag.collection is not None, "Collection should be initialized")
-    assert_equal(rag.chunk_size, 500, "Default chunk size should be 500")
-    assert_equal(rag.chunk_overlap, 50, "Default chunk overlap should be 50")
+    assert_true(
+        rag.collection is not None, "Collection should be initialized"
+    )
+    assert_equal(
+        rag.chunk_size, 500, "Default chunk size should be 500"
+    )
+    assert_equal(
+        rag.chunk_overlap, 50, "Default chunk overlap should be 50"
+    )
 
     # Test custom initialization
     custom_rag = RAGSystem(
-        collection_name="test_collection", chunk_size=1000, chunk_overlap=100
+        collection_name="test_collection",
+        chunk_size=1000,
+        chunk_overlap=100,
     )
-    assert_equal(custom_rag.chunk_size, 1000, "Custom chunk size not set correctly")
     assert_equal(
-        custom_rag.chunk_overlap, 100, "Custom chunk overlap not set correctly"
+        custom_rag.chunk_size,
+        1000,
+        "Custom chunk size not set correctly",
+    )
+    assert_equal(
+        custom_rag.chunk_overlap,
+        100,
+        "Custom chunk overlap not set correctly",
     )
     print("✓ RAG initialization tests passed")
 
@@ -58,18 +81,26 @@ def test_rag_text_chunking():
 
     # Test empty text
     chunks = rag.chunk_text("")
-    assert_equal(len(chunks), 1, "Empty text should produce single chunk")
+    assert_equal(
+        len(chunks), 1, "Empty text should produce single chunk"
+    )
 
     # Test short text
     short_text = "This is a short text"
     chunks = rag.chunk_text(short_text)
-    assert_equal(len(chunks), 1, "Short text should produce single chunk")
-    assert_equal(chunks[0], short_text, "Short text chunk should match input")
+    assert_equal(
+        len(chunks), 1, "Short text should produce single chunk"
+    )
+    assert_equal(
+        chunks[0], short_text, "Short text chunk should match input"
+    )
 
     # Test long text
     long_text = " ".join(["word"] * 200)  # Create text with 200 words
     chunks = rag.chunk_text(long_text)
-    assert_true(len(chunks) > 1, "Long text should produce multiple chunks")
+    assert_true(
+        len(chunks) > 1, "Long text should produce multiple chunks"
+    )
 
     print("✓ RAG text chunking tests passed")
 
@@ -103,13 +134,15 @@ def test_rag_document_processing():
     # Test multiple document addition
     results = rag.add_multiple_documents([text_file, json_file])
     assert_true(
-        all(results.values()), "All valid documents should be processed successfully"
+        all(results.values()),
+        "All valid documents should be processed successfully",
     )
 
     # Test folder addition
     folder_results = rag.add_folder(test_dir)
     assert_true(
-        len(folder_results) >= 2, "Folder processing should find all test files"
+        len(folder_results) >= 2,
+        "Folder processing should find all test files",
     )
 
     # Cleanup
@@ -147,12 +180,19 @@ def test_rag_querying():
         n_results=1,
         metadata_filter={"source": str(test_file.absolute())},
     )
-    assert_true(len(results) > 0, "Query with metadata filter should return results")
+    assert_true(
+        len(results) > 0,
+        "Query with metadata filter should return results",
+    )
 
     # Test relevant context
     context = rag.get_relevant_context("fox jumps", max_tokens=100)
-    assert_true(len(context) > 0, "Relevant context should not be empty")
-    assert_true("fox" in context, "Context should contain query terms")
+    assert_true(
+        len(context) > 0, "Relevant context should not be empty"
+    )
+    assert_true(
+        "fox" in context, "Context should contain query terms"
+    )
 
     # Cleanup
     test_file.unlink()
@@ -168,14 +208,23 @@ def test_browser_agent():
     agent = BrowserAgent(agent_name="TestAgent")
 
     # Test initialization
-    assert_equal(agent.agent_name, "TestAgent", "Agent name should be set correctly")
+    assert_equal(
+        agent.agent_name,
+        "TestAgent",
+        "Agent name should be set correctly",
+    )
 
     # Test simple task (this will not actually run the browser)
     try:
         result = agent.run("Navigate to example.com")
-        assert_true(isinstance(result, str), "Browser agent result should be string")
+        assert_true(
+            isinstance(result, str),
+            "Browser agent result should be string",
+        )
     except Exception as e:
-        print(f"Note: Browser agent test skipped - requires browser setup: {e}")
+        print(
+            f"Note: Browser agent test skipped - requires browser setup: {e}"
+        )
 
     print("✓ Browser Agent tests passed")
 
@@ -186,11 +235,21 @@ def test_huggingface_api():
     print("Testing HuggingFace API...")
 
     # Test initialization
-    api = HuggingFaceAPI(model_id="gpt2", task_type="text-generation", max_length=50)
+    api = HuggingFaceAPI(
+        model_id="gpt2", task_type="text-generation", max_length=50
+    )
 
-    assert_equal(api.model_id, "gpt2", "Model ID should be set correctly")
-    assert_equal(api.task_type, "text-generation", "Task type should be set correctly")
-    assert_equal(api.max_length, 50, "Max length should be set correctly")
+    assert_equal(
+        api.model_id, "gpt2", "Model ID should be set correctly"
+    )
+    assert_equal(
+        api.task_type,
+        "text-generation",
+        "Task type should be set correctly",
+    )
+    assert_equal(
+        api.max_length, 50, "Max length should be set correctly"
+    )
 
     print("✓ HuggingFace API tests passed")
 
@@ -201,24 +260,41 @@ def test_safe_calculator():
     print("Testing safe calculator...")
 
     # Test basic operations
-    assert_equal(safe_calculator("2 + 2"), "4", "Basic addition failed")
-    assert_equal(safe_calculator("10 - 5"), "5", "Basic subtraction failed")
-    assert_equal(safe_calculator("4 * 3"), "12", "Basic multiplication failed")
-    assert_equal(safe_calculator("15 / 3"), "5", "Basic division failed")
+    assert_equal(
+        safe_calculator("2 + 2"), "4", "Basic addition failed"
+    )
+    assert_equal(
+        safe_calculator("10 - 5"), "5", "Basic subtraction failed"
+    )
+    assert_equal(
+        safe_calculator("4 * 3"), "12", "Basic multiplication failed"
+    )
+    assert_equal(
+        safe_calculator("15 / 3"), "5", "Basic division failed"
+    )
 
     # Test complex expressions
-    assert_equal(safe_calculator("(2 + 3) * 4"), "20", "Complex expression failed")
-    assert_equal(safe_calculator("2 ** 3"), "8", "Exponentiation failed")
+    assert_equal(
+        safe_calculator("(2 + 3) * 4"),
+        "20",
+        "Complex expression failed",
+    )
+    assert_equal(
+        safe_calculator("2 ** 3"), "8", "Exponentiation failed"
+    )
 
     # Test error cases
     assert_true(
-        "Error" in safe_calculator("10 / 0"), "Division by zero should return error"
+        "Error" in safe_calculator("10 / 0"),
+        "Division by zero should return error",
     )
     assert_true(
-        "Error" in safe_calculator("import os"), "Code injection should be prevented"
+        "Error" in safe_calculator("import os"),
+        "Code injection should be prevented",
     )
     assert_true(
-        "Error" in safe_calculator("2 + abc"), "Invalid expression should return error"
+        "Error" in safe_calculator("2 + abc"),
+        "Invalid expression should return error",
     )
 
     print("✓ Safe calculator tests passed")
@@ -231,8 +307,13 @@ def test_agentos_initialization():
 
     # Test default initialization
     agent = AgentOS()
-    assert_true(agent.rag_system is not None, "RAG system should be initialized")
-    assert_true(agent.agent is not None, "Agent should be initialized")
+    assert_true(
+        agent.rag_system is not None,
+        "RAG system should be initialized",
+    )
+    assert_true(
+        agent.agent is not None, "Agent should be initialized"
+    )
 
     # Test custom initialization
     custom_agent = AgentOS(
@@ -240,8 +321,14 @@ def test_agentos_initialization():
         rag_chunk_size=2000,
         rag_collection_name="test_collection",
     )
-    assert_equal(custom_agent.model_name, "gpt-4o-mini", "Custom model name not set")
-    assert_equal(custom_agent.rag_chunk_size, 2000, "Custom chunk size not set")
+    assert_equal(
+        custom_agent.model_name,
+        "gpt-4o-mini",
+        "Custom model name not set",
+    )
+    assert_equal(
+        custom_agent.rag_chunk_size, 2000, "Custom chunk size not set"
+    )
 
     print("✓ AgentOS initialization tests passed")
 
@@ -254,7 +341,9 @@ def test_agentos_rag_integration():
 
     # Create test document
     test_file = Path("test_integration.txt")
-    test_file.write_text("This is a test document for AgentOS RAG integration.")
+    test_file.write_text(
+        "This is a test document for AgentOS RAG integration."
+    )
 
     # Test document addition
     agent.add_file(str(test_file))
@@ -269,7 +358,8 @@ def test_agentos_rag_integration():
 
     agent.add_multiple_documents([str(test_file), str(test_file2)])
     assert_true(
-        str(test_file2.absolute()) in agent.rag_system.processed_files,
+        str(test_file2.absolute())
+        in agent.rag_system.processed_files,
         "Multiple documents should be processed",
     )
 
@@ -289,9 +379,13 @@ def test_agentos_task_execution():
     # Test simple task
     try:
         result = agent.run("What is 2 + 2?")
-        assert_true(isinstance(result, str), "Task result should be string")
+        assert_true(
+            isinstance(result, str), "Task result should be string"
+        )
     except Exception as e:
-        print(f"Note: Task execution test limited - requires API keys: {e}")
+        print(
+            f"Note: Task execution test limited - requires API keys: {e}"
+        )
 
     # Test task with context
     test_file = Path("test_context.txt")
@@ -300,9 +394,14 @@ def test_agentos_task_execution():
 
     try:
         result = agent.run("What is the capital of France?")
-        assert_true(isinstance(result, str), "Contextual task result should be string")
+        assert_true(
+            isinstance(result, str),
+            "Contextual task result should be string",
+        )
     except Exception as e:
-        print(f"Note: Contextual task test limited - requires API keys: {e}")
+        print(
+            f"Note: Contextual task test limited - requires API keys: {e}"
+        )
 
     # Cleanup
     test_file.unlink()
@@ -323,7 +422,9 @@ def test_agentos_error_handling():
     # Test invalid folder addition
     results = agent.add_folder("nonexistent_folder")
     assert_equal(
-        len(results), 0, "Adding nonexistent folder should return empty results"
+        len(results),
+        0,
+        "Adding nonexistent folder should return empty results",
     )
 
     print("✓ AgentOS error handling tests passed")

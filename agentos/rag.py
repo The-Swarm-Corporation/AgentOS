@@ -45,8 +45,10 @@ class RAGSystem:
         self.client = chromadb.Client()
 
         # Set up the embedding function
-        self.embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
-            model_name=embedding_model
+        self.embedding_fn = (
+            embedding_functions.SentenceTransformerEmbeddingFunction(
+                model_name=embedding_model
+            )
         )
 
         # Create or get collection
@@ -141,17 +143,36 @@ class RAGSystem:
             print(f"Error: {folder_path} is not a directory")
             return {}
 
-        supported_types = {".txt", ".md", ".pdf", ".csv", ".docx", ".pptx", ".json", ".html"}
+        supported_types = {
+            ".txt",
+            ".md",
+            ".pdf",
+            ".csv",
+            ".docx",
+            ".pptx",
+            ".json",
+            ".html",
+        }
 
         if file_types:
             file_types = {
-                ext.lower() if ext.startswith(".") else f".{ext.lower()}"
+                (
+                    ext.lower()
+                    if ext.startswith(".")
+                    else f".{ext.lower()}"
+                )
                 for ext in file_types
             }
             # Validate file types
             if not all(ext in supported_types for ext in file_types):
-                unsupported = [ext for ext in file_types if ext not in supported_types]
-                print(f"Warning: Unsupported file types: {unsupported}")
+                unsupported = [
+                    ext
+                    for ext in file_types
+                    if ext not in supported_types
+                ]
+                print(
+                    f"Warning: Unsupported file types: {unsupported}"
+                )
                 print(f"Supported types are: {supported_types}")
                 file_types = file_types & supported_types
         else:
@@ -161,7 +182,10 @@ class RAGSystem:
         pattern = "**/*" if recursive else "*"
 
         for file_path in folder_path.glob(pattern):
-            if file_path.is_file() and file_path.suffix.lower() in file_types:
+            if (
+                file_path.is_file()
+                and file_path.suffix.lower() in file_types
+            ):
                 results[str(file_path)] = self.add_document(file_path)
 
         return results
@@ -217,47 +241,50 @@ class RAGSystem:
 
     def chunk_text(self, text: str) -> List[str]:
         """Split text into chunks based on token count.
-        
+
         Args:
             text (str): The text to split into chunks
-            
+
         Returns:
             List[str]: List of text chunks
         """
         if not text:
             return []
-            
+
         # Split text into sentences (rough approximation)
-        sentences = text.split('.')
+        sentences = text.split(".")
         chunks = []
         current_chunk = []
         current_length = 0
-        
+
         for sentence in sentences:
             sentence = sentence.strip()
             if not sentence:
                 continue
-                
+
             # Rough estimate of tokens (words + punctuation)
             sentence_length = len(sentence.split())
-            
+
             # If adding this sentence would exceed chunk size, save current chunk
-            if current_length + sentence_length > self.chunk_size and current_chunk:
-                chunks.append('. '.join(current_chunk) + '.')
+            if (
+                current_length + sentence_length > self.chunk_size
+                and current_chunk
+            ):
+                chunks.append(". ".join(current_chunk) + ".")
                 current_chunk = []
                 current_length = 0
-            
+
             current_chunk.append(sentence)
             current_length += sentence_length
-        
+
         # Add any remaining text as the last chunk
         if current_chunk:
-            chunks.append('. '.join(current_chunk) + '.')
-            
+            chunks.append(". ".join(current_chunk) + ".")
+
         # Handle case where a single sentence is longer than chunk_size
         if not chunks:
             chunks = [text]
-            
+
         return chunks
 
     def process_text(self, text: str) -> List[str]:
@@ -274,18 +301,18 @@ class RAGSystem:
 
     def process_markdown(self, text: str) -> List[str]:
         """Process Markdown files.
-        
+
         Args:
             text (str): The markdown text content to process
-            
+
         Returns:
             List[str]: List of text chunks
         """
         # Remove markdown image syntax to avoid issues with long URLs
         # Remove image markdown syntax
-        text = re.sub(r'!\[.*?\]\(.*?\)', '', text)
+        text = re.sub(r"!\[.*?\]\(.*?\)", "", text)
         # Remove URL markdown syntax
-        text = re.sub(r'\[([^\]]+)\]\(([^\)]+)\)', r'\1', text)
+        text = re.sub(r"\[([^\]]+)\]\(([^\)]+)\)", r"\1", text)
         return self.chunk_text(text)
 
     def process_csv(self, file_path: str) -> List[str]:
@@ -323,7 +350,12 @@ class RAGSystem:
             processor = processors.get(file_path.suffix.lower())
             if processor:
                 # For text-based files, read content and process
-                if file_path.suffix.lower() in [".txt", ".md", ".json", ".html"]:
+                if file_path.suffix.lower() in [
+                    ".txt",
+                    ".md",
+                    ".json",
+                    ".html",
+                ]:
                     with open(file_path, "r", encoding="utf-8") as f:
                         chunks = processor(f.read())
                 # For binary or special format files, pass the file path
@@ -334,8 +366,13 @@ class RAGSystem:
                 if chunks:
                     self.collection.add(
                         documents=chunks,
-                        metadatas=[{"source": str(file_path)} for _ in chunks],
-                        ids=[f"{file_path.stem}_{i}" for i in range(len(chunks))],
+                        metadatas=[
+                            {"source": str(file_path)} for _ in chunks
+                        ],
+                        ids=[
+                            f"{file_path.stem}_{i}"
+                            for i in range(len(chunks))
+                        ],
                     )
                     print(f"Successfully processed {file_path}")
                     return True
@@ -364,7 +401,9 @@ class RAGSystem:
             List of dictionaries containing matched documents and their metadata
         """
         results = self.collection.query(
-            query_texts=[query], n_results=n_results, where=metadata_filter
+            query_texts=[query],
+            n_results=n_results,
+            where=metadata_filter,
         )
 
         return [
@@ -376,7 +415,9 @@ class RAGSystem:
             )
         ]
 
-    def get_relevant_context(self, query: str, max_tokens: int = 3000) -> str:
+    def get_relevant_context(
+        self, query: str, max_tokens: int = 3000
+    ) -> str:
         """
         Get relevant context for a query, ensuring the total tokens stay within limit.
 
