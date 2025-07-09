@@ -315,11 +315,17 @@ def call_huggingface_model(
     return model.run(task)
 
 
+def list_models_on_litellm():
+    """
+    List all models supported by litellm.
+    """
+    
+
+
 def call_models_on_litellm(
     model_name: str,
     task: str,
     temperature: float = 0.5,
-    system_prompt: str = None,
 ):
     """
     Call various LLM models through litellm's unified interface with automatic token management.
@@ -344,15 +350,11 @@ def call_models_on_litellm(
         - 'claude-instant-1': Legacy Claude Instant 1
 
     OpenAI GPT Models:
-        - 'gpt-4-1106-preview': GPT-4 Turbo
-        - 'gpt-4-vision-preview': GPT-4 with vision capabilities
-        - 'gpt-4': Base GPT-4 model
-        - 'gpt-3.5-turbo': GPT-3.5 Turbo
-        - 'gpt-3.5-turbo-16k': GPT-3.5 with 16k context
 
     Other Models:
         - 'gpt-4o-mini': GPT-4 Optimized Mini variant
-        - Additional models supported by litellm (see litellm docs)
+        - 'gpt-4o': GPT-4 Optimized
+        - 'gpt-4.1': GPT-4.1 (latest)
 
     Args:
         model_name (str): The identifier for the model to use. Must be one of the supported
@@ -398,7 +400,7 @@ def call_models_on_litellm(
     response = completion(
         model=model_name,
         messages=[
-            {"role": "system", "content": system_prompt},
+            # {"role": "system", "content": system_prompt},
             {"role": "user", "content": task},
         ],
         temperature=temperature,
@@ -531,14 +533,14 @@ def run_browser_agent(task: str) -> str:
 class AgentOS:
     def __init__(
         self,
-        model_name: str = "claude-3-5-sonnet-20240620",
+        model_name: str = "gpt-4o-mini",
         system_prompt: str = AGENT_OS_SYSTEM_PROMPT,
     ):
         self.model_name = model_name
         self.system_prompt = system_prompt
 
         self.agent = Agent(
-            model=model_name,
+            model_name=model_name,
             system_prompt=system_prompt,
             agent_name="AgentOS",
             description="An agent that can perform OS-level tasks",
@@ -548,6 +550,7 @@ class AgentOS:
                 call_models_on_litellm,
             ],  # Add HuggingFace API as a tool
             dynamic_temperature_enabled=True,
+            print_on=True,
         )
 
     def run(
@@ -557,15 +560,29 @@ class AgentOS:
         video: str = None,
         audio: str = None,
     ):
-        task_prompt = ""
+        try:
+            task_prompt = ""
 
-        if video:
-            out = process_video_with_gemini(
-                video_path=video, task=task
-            )
+            if video:
+                out = process_video_with_gemini(
+                    video_path=video, task=task
+                )
+                task_prompt += f"Video Analysis Output:\n{out}\n\n"
 
-            task_prompt += f"Video Analysis Output:\n{out}\n\n"
+            final_output = self.agent.run(task=task_prompt or task, img=img)
+            
+            # Handle None response
+            if final_output is None:
+                return "No response generated. Please try again."
+                
+            return final_output
 
-        final_output = self.agent.run(task=task_prompt, img=img)
+        except Exception as e:
+            error_msg = f"Error running AgentOS: {str(e)}"
+            print(error_msg)  # Print error for immediate feedback
+            return error_msg  # Return error message instead of None
 
-        return final_output
+
+# if __name__ == "__main__":
+#     agent = AgentOS()
+#     print(agent.run(task="Call claude-3-5-sonnet-20240620 and ask it to summarize the book atlas shrugged"))
