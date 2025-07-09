@@ -1,4 +1,4 @@
-from agentos import AgentOS, RAGSystem
+from agentos import AgentOS
 
 agent = AgentOS()
 

@@ -1,9 +1,7 @@
 import asyncio
-import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-import anyio
 import torch
 from browser_use import Agent as BrowserAgentBase
 from claude_code_sdk import ClaudeCodeOptions, Message, query
@@ -11,7 +9,6 @@ from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from litellm import completion, speech
 from swarms import Agent
-from swarms.structs.ma_utils import models
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
@@ -21,7 +18,6 @@ from transformers import (
 from agentos.rag import RAGSystem
 
 load_dotenv()
-
 
 
 # System prompt for AgentOS
@@ -114,6 +110,7 @@ You are AgentOS, an advanced autonomous operating system interface designed to s
 
 Remember: You are an integral part of the system, responsible for making intelligent decisions about resource utilization and task execution. Always strive to provide the most efficient and effective solution to user requests while maintaining system stability and security.
 """
+
 
 class BrowserAgent:
     """
@@ -291,9 +288,7 @@ class HuggingFaceAPI:
         """
         self.model_id = model_id
         self.task_type = task_type
-        self.device = device or (
-            "cuda" if torch.cuda.is_available() else "cpu"
-        )
+        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
         self.max_length = max_length
         self.quantize = quantize
         self.quantization_config = quantization_config or {}
@@ -312,11 +307,7 @@ class HuggingFaceAPI:
             self.model = AutoModelForCausalLM.from_pretrained(
                 model_id,
                 device_map=self.device,
-                torch_dtype=(
-                    torch.float16
-                    if self.device == "cuda"
-                    else torch.float32
-                ),
+                torch_dtype=(torch.float16 if self.device == "cuda" else torch.float32),
                 **kwargs,
             )
             self.tokenizer = AutoTokenizer.from_pretrained(model_id)
@@ -352,9 +343,7 @@ class HuggingFaceAPI:
 
                 if isinstance(outputs, list):
                     if self.task_type == "text-generation":
-                        return [
-                            out["generated_text"] for out in outputs
-                        ]
+                        return [out["generated_text"] for out in outputs]
                     return outputs
                 return (
                     outputs["generated_text"]
@@ -363,18 +352,14 @@ class HuggingFaceAPI:
                 )
 
             # Manual generation if pipeline is not available
-            inputs = self.tokenizer(prompt, return_tensors="pt").to(
-                self.device
-            )
+            inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
             outputs = self.model.generate(
                 **inputs,
                 max_length=max_length or self.max_length,
                 num_return_sequences=num_return_sequences,
                 **kwargs,
             )
-            return self.tokenizer.batch_decode(
-                outputs, skip_special_tokens=True
-            )
+            return self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
 
         except Exception as e:
             print(f"Error in generation: {e}")
@@ -475,7 +460,7 @@ async def call_terminal_developer_agent_async(
     system_prompt: str = "You are a helpful assistant",
     cwd: str = None,
     allowed_tools: list = None,
-    permission_mode: str = "acceptEdits"
+    permission_mode: str = "acceptEdits",
 ):
     """
     Call the Claude Code terminal developer agent with the specified parameters.
@@ -502,7 +487,7 @@ async def call_terminal_developer_agent_async(
             system_prompt=system_prompt,
             cwd=Path(cwd) if cwd else None,
             allowed_tools=allowed_tools,
-            permission_mode=permission_mode
+            permission_mode=permission_mode,
         )
         async for message in query(prompt=task, options=options):
             messages.append(message)
@@ -517,7 +502,7 @@ def call_terminal_developer_agent(
     system_prompt: str = "You are a helpful assistant",
     cwd: str = None,
     allowed_tools: list = None,
-    permission_mode: str = "acceptEdits"
+    permission_mode: str = "acceptEdits",
 ) -> list:
     """
     Call the Claude Code terminal developer agent with the specified parameters. This Terminal developer agent
@@ -563,10 +548,9 @@ def call_terminal_developer_agent(
             system_prompt=system_prompt,
             cwd=cwd,
             allowed_tools=allowed_tools,
-            permission_mode=permission_mode
+            permission_mode=permission_mode,
         )
     )
-
 
 
 def list_models_on_litellm():
@@ -594,16 +578,15 @@ def list_models_on_litellm():
         - Check litellm's documentation for the most up-to-date model list
     """
     from litellm import model_list
-    
-    return model_list
 
+    return model_list
 
 
 def generate_speech(
     text: str,
     voice: Optional[str] = "alloy",
     model: Optional[str] = "openai/tts-1",
-    file_path: Optional[str] = "speech.mp3"
+    file_path: Optional[str] = "speech.mp3",
 ):
     """
     Generate speech audio from text using a specified voice and model.
@@ -645,6 +628,7 @@ def generate_speech(
     )
     response.stream_to_file(speech_file_path)
     return speech_file_path
+
 
 def call_models_on_litellm(
     model_name: str,
@@ -774,20 +758,25 @@ def safe_calculator(expression: str) -> str:
     # List of allowed characters
     allowed_chars = set("0123456789.+-*/(). %")
     # Remove all whitespace
-    expression = ''.join(expression.split())
-    
+    expression = "".join(expression.split())
+
     # Check if expression only contains allowed characters
     if not all(c in allowed_chars for c in expression):
-        return "Error: Invalid expression - only basic mathematical operations are allowed"
-    
+        return (
+            "Error: Invalid expression - only basic mathematical operations are allowed"
+        )
+
     try:
         # Additional security check for potentially dangerous expressions
-        if any(keyword in expression.lower() for keyword in ['eval', 'exec', 'import', '__']):
+        if any(
+            keyword in expression.lower()
+            for keyword in ["eval", "exec", "import", "__"]
+        ):
             return "Error: Invalid expression"
-            
+
         # Evaluate the expression
         result = eval(expression, {"__builtins__": {}}, {})
-        
+
         # Format the result
         if isinstance(result, (int, float)):
             # Handle very large or very small numbers
@@ -795,17 +784,16 @@ def safe_calculator(expression: str) -> str:
                 return f"{result:.2e}"
             # For regular floats, limit decimal places
             elif isinstance(result, float):
-                return f"{result:.6f}".rstrip('0').rstrip('.')
+                return f"{result:.6f}".rstrip("0").rstrip(".")
             return str(result)
         return "Error: Invalid result type"
-        
+
     except ZeroDivisionError:
         return "Error: Division by zero"
     except (SyntaxError, NameError, TypeError):
         return "Error: Invalid expression"
     except Exception as e:
         return f"Error: {str(e)}"
-
 
 
 def process_video_with_gemini(
@@ -856,9 +844,7 @@ def process_video_with_gemini(
 
     myfile = client.files.upload(file=video_path)
 
-    response = client.models.generate_content(
-        model=model_name, contents=[myfile, task]
-    )
+    response = client.models.generate_content(model=model_name, contents=[myfile, task])
 
     print(response.text)
 
@@ -959,9 +945,9 @@ class AgentOS:
             dynamic_temperature_enabled=True,
             print_on=True,
         )
-        
+
         self.rag_system = self.setup_rag()
-        
+
     def setup_rag(self):
         """
         Set up the Retrieval-Augmented Generation (RAG) system.
@@ -976,7 +962,7 @@ class AgentOS:
             collection_name=self.rag_collection_name,
             chunk_size=self.rag_chunk_size,
         )
-        
+
     def add_file(self, file_path: str):
         """
         Add a single file to the RAG system's document collection.
@@ -986,7 +972,7 @@ class AgentOS:
                 Supported formats depend on the RAG system's capabilities.
         """
         self.rag_system.add_document(file_path)
-        
+
     def add_multiple_documents(self, file_paths: List[str]):
         """
         Add multiple files to the RAG system's document collection.
@@ -996,7 +982,7 @@ class AgentOS:
                 All files should be in supported formats.
         """
         self.rag_system.add_multiple_documents(file_paths)
-        
+
     def add_folder(self, folder_path: str):
         """
         Add all supported files from a folder to the RAG system.
@@ -1006,7 +992,7 @@ class AgentOS:
                 The system will recursively process all supported files in the folder.
         """
         self.rag_system.add_folder(folder_path)
-        
+
     def clear_processed_files(self):
         """
         Clear all processed files from the RAG system.
@@ -1063,17 +1049,17 @@ class AgentOS:
                     task_prompt += f"Context from knowledge base:\n{context}\n\n"
 
             if video:
-                out = process_video_with_gemini(
-                    video_path=video, task=task
-                )
+                out = process_video_with_gemini(video_path=video, task=task)
                 task_prompt += f"Video Analysis Output:\n{out}\n\n"
 
-            final_output = self.agent.run(task=task_prompt + task if task_prompt else task, img=img)
-            
+            final_output = self.agent.run(
+                task=task_prompt + task if task_prompt else task, img=img
+            )
+
             # Handle None response
             if final_output is None:
                 return "No response generated. Please try again."
-                
+
             return final_output
 
         except Exception as e:

@@ -14,14 +14,14 @@ class RAGSystem:
     """
     A Retrieval Augmented Generation system that can process various file types,
     embed them using ChromaDB, and enable semantic search capabilities.
-    
+
     Features:
     - Supports multiple file types (txt, pdf, csv, docx, pptx, json, html)
     - Automatic text chunking based on token count
     - Document embedding using ChromaDB
     - Semantic search capabilities
     - Integration with AgentOS
-    
+
     Example:
         >>> rag = RAGSystem()
         >>> # Add a single document
@@ -33,7 +33,7 @@ class RAGSystem:
         >>> # Query the documents
         >>> results = rag.query("What is the main topic?")
     """
-    
+
     def __init__(
         self,
         collection_name: str = "agentos_docs",
@@ -43,38 +43,36 @@ class RAGSystem:
     ):
         """Initialize the RAG system."""
         # Initialize ChromaDB client
-        self.client = chromadb.Client(Settings(
-            chroma_db_impl="duckdb+parquet",
-            persist_directory=".chroma"
-        ))
-        
+        self.client = chromadb.Client(
+            Settings(chroma_db_impl="duckdb+parquet", persist_directory=".chroma")
+        )
+
         # Set up the embedding function
         self.embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
             model_name=embedding_model
         )
-        
+
         # Create or get collection
         self.collection = self.client.get_or_create_collection(
-            name=collection_name,
-            embedding_function=self.embedding_fn
+            name=collection_name, embedding_function=self.embedding_fn
         )
-        
+
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
-        
+
         # Track processed files to avoid duplicates
         self.processed_files = set()
 
     def add_document(self, file_path: Union[str, Path]) -> bool:
         """
         Add a single document to the RAG system.
-        
+
         Args:
             file_path: Path to the document to add
-            
+
         Returns:
             bool: True if document was successfully processed, False otherwise
-            
+
         Example:
             >>> rag.add_document("path/to/document.pdf")
             True
@@ -83,26 +81,28 @@ class RAGSystem:
         if not file_path.is_file():
             print(f"Error: {file_path} is not a file")
             return False
-            
+
         if str(file_path.absolute()) in self.processed_files:
             print(f"Warning: {file_path} has already been processed")
             return False
-            
+
         success = self._process_file(file_path)
         if success:
             self.processed_files.add(str(file_path.absolute()))
         return success
 
-    def add_multiple_documents(self, file_paths: List[Union[str, Path]]) -> Dict[str, bool]:
+    def add_multiple_documents(
+        self, file_paths: List[Union[str, Path]]
+    ) -> Dict[str, bool]:
         """
         Add multiple documents to the RAG system.
-        
+
         Args:
             file_paths: List of paths to documents
-            
+
         Returns:
             Dict[str, bool]: Dictionary mapping file paths to their processing status
-            
+
         Example:
             >>> results = rag.add_multiple_documents(["doc1.pdf", "doc2.txt"])
             >>> for path, success in results.items():
@@ -117,20 +117,20 @@ class RAGSystem:
         self,
         folder_path: Union[str, Path],
         recursive: bool = True,
-        file_types: Optional[List[str]] = None
+        file_types: Optional[List[str]] = None,
     ) -> Dict[str, bool]:
         """
         Add all documents from a folder to the RAG system.
-        
+
         Args:
             folder_path: Path to the folder
             recursive: Whether to process subfolders (default: True)
             file_types: List of file extensions to process (e.g., ['.pdf', '.txt'])
                        If None, processes all supported file types
-            
+
         Returns:
             Dict[str, bool]: Dictionary mapping file paths to their processing status
-            
+
         Example:
             >>> # Process all files in folder
             >>> rag.add_folder("path/to/docs/")
@@ -144,14 +144,13 @@ class RAGSystem:
             print(f"Error: {folder_path} is not a directory")
             return {}
 
-        supported_types = {
-            '.txt', '.pdf', '.csv', '.docx',
-            '.pptx', '.json', '.html'
-        }
-        
+        supported_types = {".txt", ".pdf", ".csv", ".docx", ".pptx", ".json", ".html"}
+
         if file_types:
-            file_types = {ext.lower() if ext.startswith('.') else f'.{ext.lower()}'
-                         for ext in file_types}
+            file_types = {
+                ext.lower() if ext.startswith(".") else f".{ext.lower()}"
+                for ext in file_types
+            }
             # Validate file types
             if not all(ext in supported_types for ext in file_types):
                 unsupported = [ext for ext in file_types if ext not in supported_types]
@@ -163,20 +162,20 @@ class RAGSystem:
 
         results = {}
         pattern = "**/*" if recursive else "*"
-        
+
         for file_path in folder_path.glob(pattern):
             if file_path.is_file() and file_path.suffix.lower() in file_types:
                 results[str(file_path)] = self.add_document(file_path)
-                
+
         return results
 
     def get_processed_files(self) -> List[str]:
         """
         Get a list of all processed file paths.
-        
+
         Returns:
             List[str]: List of absolute paths of processed files
-            
+
         Example:
             >>> files = rag.get_processed_files()
             >>> for file in files:
@@ -187,7 +186,7 @@ class RAGSystem:
     def clear_processed_files(self) -> None:
         """
         Clear the list of processed files, allowing them to be processed again.
-        
+
         Example:
             >>> rag.clear_processed_files()
             >>> rag.add_document("previously_processed.pdf")  # Will process again
@@ -197,13 +196,13 @@ class RAGSystem:
     def remove_document(self, file_path: Union[str, Path]) -> bool:
         """
         Remove a document and its chunks from the RAG system.
-        
+
         Args:
             file_path: Path to the document to remove
-            
+
         Returns:
             bool: True if document was successfully removed, False otherwise
-            
+
         Example:
             >>> rag.remove_document("path/to/document.pdf")
             True
@@ -211,9 +210,7 @@ class RAGSystem:
         file_path = str(Path(file_path).absolute())
         try:
             # Remove all chunks associated with this file
-            self.collection.delete(
-                where={"source": file_path}
-            )
+            self.collection.delete(where={"source": file_path})
             self.processed_files.discard(file_path)
             print(f"Successfully removed {file_path}")
             return True
@@ -225,26 +222,26 @@ class RAGSystem:
         """Split text into chunks based on token count."""
         chunks = []
         tokens = count_tokens(text)
-        
+
         if len(tokens) <= self.chunk_size:
             return [text]
-            
+
         current_chunk = []
         current_size = 0
-        
+
         for token in tokens:
             current_chunk.append(token)
             current_size += 1
-            
+
             if current_size >= self.chunk_size:
                 chunks.append(" ".join(current_chunk))
                 # Keep overlap tokens for next chunk
-                current_chunk = current_chunk[-self.chunk_overlap:]
+                current_chunk = current_chunk[-self.chunk_overlap :]
                 current_size = len(current_chunk)
-        
+
         if current_chunk:
             chunks.append(" ".join(current_chunk))
-            
+
         return chunks
 
     def process_text(self, text: str) -> List[str]:
@@ -267,15 +264,15 @@ class RAGSystem:
 
     def process_json(self, file_path: str) -> List[str]:
         """Process JSON files."""
-        with open(file_path, 'r') as f:
+        with open(file_path, "r") as f:
             data = json.load(f)
         text = json.dumps(data, indent=2)
         return self.chunk_text(text)
 
     def process_html(self, file_path: str) -> List[str]:
         """Process HTML files."""
-        with open(file_path, 'r') as f:
-            soup = BeautifulSoup(f.read(), 'html.parser')
+        with open(file_path, "r") as f:
+            soup = BeautifulSoup(f.read(), "html.parser")
         text = soup.get_text()
         return self.chunk_text(text)
 
@@ -290,21 +287,21 @@ class RAGSystem:
             ".json": self.process_json,
             ".html": self.process_html,
         }
-        
+
         try:
             processor = processors.get(file_path.suffix.lower())
             if processor:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    if file_path.suffix.lower() == '.txt':
+                with open(file_path, "r", encoding="utf-8") as f:
+                    if file_path.suffix.lower() == ".txt":
                         chunks = processor(f.read())
                     else:
                         chunks = processor(str(file_path))
-                
+
                 # Add chunks to ChromaDB
                 self.collection.add(
                     documents=chunks,
                     metadatas=[{"source": str(file_path)} for _ in chunks],
-                    ids=[f"{file_path.stem}_{i}" for i in range(len(chunks))]
+                    ids=[f"{file_path.stem}_{i}" for i in range(len(chunks))],
                 )
                 print(f"Successfully processed {file_path}")
             else:
@@ -316,58 +313,55 @@ class RAGSystem:
         self,
         query: str,
         n_results: int = 5,
-        metadata_filter: Optional[Dict[str, Any]] = None
+        metadata_filter: Optional[Dict[str, Any]] = None,
     ) -> List[Dict[str, Any]]:
         """
         Query the document collection.
-        
+
         Args:
             query: The search query
             n_results: Number of results to return
             metadata_filter: Optional filter for metadata fields
-            
+
         Returns:
             List of dictionaries containing matched documents and their metadata
         """
         results = self.collection.query(
-            query_texts=[query],
-            n_results=n_results,
-            where=metadata_filter
+            query_texts=[query], n_results=n_results, where=metadata_filter
         )
-        
-        return [{
-            "text": doc,
-            "metadata": meta,
-            "distance": dist
-        } for doc, meta, dist in zip(
-            results["documents"][0],
-            results["metadatas"][0],
-            results["distances"][0]
-        )]
+
+        return [
+            {"text": doc, "metadata": meta, "distance": dist}
+            for doc, meta, dist in zip(
+                results["documents"][0],
+                results["metadatas"][0],
+                results["distances"][0],
+            )
+        ]
 
     def get_relevant_context(self, query: str, max_tokens: int = 3000) -> str:
         """
         Get relevant context for a query, ensuring the total tokens stay within limit.
-        
+
         Args:
             query: The search query
             max_tokens: Maximum number of tokens to return
-            
+
         Returns:
             A string containing the relevant context
         """
         results = self.query(query, n_results=10)
         context = ""
         current_tokens = 0
-        
+
         for result in results:
             text = result["text"]
             tokens_in_text = len(count_tokens(text))
-            
+
             if current_tokens + tokens_in_text > max_tokens:
                 break
-                
+
             context += text + "\n\n"
             current_tokens += tokens_in_text
-            
-        return context.strip() 
+
+        return context.strip()
