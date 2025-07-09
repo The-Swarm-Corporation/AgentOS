@@ -81,21 +81,19 @@ Developed by [Swarms.ai](https://swarms.ai) and partners, AgentOS represents a p
 
 ## Technology Partners
 
-AgentOS integrates with several best-in-class technologies to provide comprehensive capabilities:
-
-| Category                | Technology                | Description/Capabilities                                                                                                                                         |
-|-------------------------|--------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Core Infrastructure** | **ChromaDB**             | - Powers our RAG (Retrieval Augmented Generation) system<br>- Vector database for document embeddings<br>- Efficient semantic search capabilities<br>- Support for multiple file types (txt, pdf, csv, docx, pptx, json, html)<br>- Automatic text chunking and token management |
-| **Language Models & AI**| **Anthropic Claude**     | - Advanced language model integration<br>- Code generation and analysis<br>- Complex reasoning tasks<br>- Latest Claude 3 models (Opus, Sonnet, Haiku)           |
-|                         | **LiteLLM**              | - Unified interface for multiple LLM providers<br>- Standardized API across different models<br>- Automatic token limit handling<br>- Built-in error handling and retries |
-|                         | **HuggingFace Transformers** | - Access to open-source AI models<br>- Local model execution capabilities<br>- Support for multiple NLP tasks<br>- Automatic device optimization (GPU/CPU)      |
-| **Development Tools**   | **Claude Code SDK**      | - Powerful code generation and manipulation<br>- Secure code execution<br>- File system operations<br>- Terminal command execution                                |
-| **Browser Automation**  | **Browser-Use**          | - Advanced web automation capabilities<br>- Natural language task interpretation<br>- Headless browser operation<br>- Session state management                   |
-| **Document Processing** | **PyPDF2**               | - PDF document processing                                                                                                                                        |
-|                         | **python-docx**          | - Word document handling                                                                                                                                         |
-|                         | **python-pptx**          | - PowerPoint file processing                                                                                                                                     |
-|                         | **BeautifulSoup4**       | - HTML parsing and processing                                                                                                                                    |
-|                         | **Pandas**               | - Structured data handling                                                                                                                                       |
+| Partner Name              | Partner Type | RAG | LLM | Description                                      | Website                                 |
+|---------------------------|--------------|-----|-----|--------------------------------------------------|-----------------------------------------|
+| ChromaDB                  | Core Infra   | ✅  |     | Vector database for RAG and semantic search       | https://www.trychroma.com/              |
+| Anthropic Claude          | LLM          |     | ✅  | Advanced language model (Claude 3 family)         | https://www.anthropic.com/              |
+| LiteLLM                   | LLM          |     | ✅  | Unified API for multiple LLM providers            | https://github.com/BerriAI/litellm      |
+| HuggingFace Transformers  | LLM          |     | ✅  | Open-source models and local LLM execution        | https://huggingface.co/transformers     |
+| Claude Code SDK           | Dev Tool     |     |     | Code generation, manipulation, and execution      | https://github.com/kyegomez/claude-code-sdk |
+| Browser-Use               | Automation   |     |     | Web automation and browser control                | https://github.com/kyegomez/browser-use |
+| PyPDF2                    | Doc Proc     | ✅  |     | PDF document processing for RAG                   | https://pypi.org/project/PyPDF2/        |
+| python-docx               | Doc Proc     | ✅  |     | Word document processing for RAG                  | https://pypi.org/project/python-docx/   |
+| python-pptx               | Doc Proc     | ✅  |     | PowerPoint file processing for RAG                | https://pypi.org/project/python-pptx/   |
+| BeautifulSoup4            | Doc Proc     | ✅  |     | HTML parsing and processing for RAG               | https://www.crummy.com/software/BeautifulSoup/ |
+| Pandas                    | Doc Proc     | ✅  |     | Structured data (CSV, etc.) processing for RAG    | https://pandas.pydata.org/              |
 
 
 ## Community 
