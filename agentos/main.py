@@ -658,4 +658,4 @@ class AgentOS:
 
 # if __name__ == "__main__":
 #     agent = AgentOS()
-#     print(agent.run(task="Call claude-3-5-sonnet-20240620 and ask it to summarize the book atlas shrugged"))
+#     print(agent.run(task="Use the browser agent to find the best performing crypto coins on coinmarketcap"))

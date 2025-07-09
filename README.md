@@ -47,9 +47,6 @@ result = agent_os.run(
 )
 ```
 
-## License
-
-This is under a MIT License
 
 ## About
 
@@ -76,8 +73,10 @@ Join our community of agent engineers and researchers for technical support, cut
 | 🎫 Events | Join our community events | [Sign up here](https://lu.ma/5p2jnc2v) |
 | 🚀 Onboarding Session | Get onboarded with Kye Gomez, creator and lead maintainer of Swarms | [Book Session](https://cal.com/swarms/swarms-onboarding-session) |
 
-
-
 ## Contributing
 
 We welcome contributions from the community. Please see our contributing guidelines for more information. 
+
+## License
+
+This is under a MIT License
