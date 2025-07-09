@@ -1,4 +1,5 @@
 import json
+import traceback
 from loguru import logger
 import asyncio
 from pathlib import Path
@@ -908,6 +909,28 @@ def run_browser_agent(task: str) -> str:
     model: BrowserAgent = BrowserAgent()
     return model.run(task)
 
+def respond_to_user(response: str):
+    """
+    Respond to the user and don't use any tools.
+
+    This tool should be used when the agent's response does not require invoking any external tools,
+    plugins, or APIs, and the answer can be provided directly as a text response to the user.
+
+    Use this function when:
+      - The user's request can be answered directly from the agent's own knowledge or reasoning.
+      - No file processing, web browsing, code execution, or external data retrieval is needed.
+      - The agent should simply return a message, summary, or explanation in natural language.
+
+    Do NOT use this function if:
+      - The response requires searching documents, browsing the web, or running code.
+      - Any tool or plugin must be invoked to fulfill the user's request.
+    """
+    formatter.print_panel(
+        content=response,
+        title="AgentOS Response",
+    )
+    
+    return response
 
 class AgentOS:
     """
@@ -955,6 +978,9 @@ class AgentOS:
         self.rag_system = rag_system
         self.rag_chunk_size = rag_chunk_size
         self.rag_collection_name = rag_collection_name
+        self.artifacts_folder = artifacts_folder
+        
+        self.setup_agent_os()
         
 
         tools = [
@@ -964,6 +990,7 @@ class AgentOS:
             safe_calculator,
             call_terminal_developer_agent,
             generate_speech,
+            respond_to_user,
         ]
 
         self.agent = Agent(
@@ -973,7 +1000,7 @@ class AgentOS:
             description="An agent that can perform OS-level tasks",
             dynamic_temperature_enabled=True,
             tools=tools,
-            print_on=True,
+            streaming_on=True,
         )
 
         self.rag_system = self.setup_rag()
@@ -1117,9 +1144,7 @@ class AgentOS:
             return final_output
 
         except Exception as e:
-            error_msg = f"Error running AgentOS: {str(e)}"
-            print(error_msg)  # Print error for immediate feedback
-            return error_msg  # Return error message instead of None
+            logger.error(f"Error running AgentOS: {str(e)} Traceback: {traceback.format_exc()}")
 
     def batched_run(
         self,

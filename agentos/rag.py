@@ -2,11 +2,11 @@ from pathlib import Path
 from typing import List, Optional, Union, Dict, Any
 import chromadb
 from chromadb.utils import embedding_functions
-from swarms.utils import count_tokens
 import pandas as pd
 from PyPDF2 import PdfReader
 from bs4 import BeautifulSoup
 import json
+import re
 
 
 class RAGSystem:
@@ -141,7 +141,7 @@ class RAGSystem:
             print(f"Error: {folder_path} is not a directory")
             return {}
 
-        supported_types = {".txt", ".pdf", ".csv", ".docx", ".pptx", ".json", ".html"}
+        supported_types = {".txt", ".md", ".pdf", ".csv", ".docx", ".pptx", ".json", ".html"}
 
         if file_types:
             file_types = {
@@ -216,29 +216,48 @@ class RAGSystem:
             return False
 
     def chunk_text(self, text: str) -> List[str]:
-        """Split text into chunks based on token count."""
+        """Split text into chunks based on token count.
+        
+        Args:
+            text (str): The text to split into chunks
+            
+        Returns:
+            List[str]: List of text chunks
+        """
+        if not text:
+            return []
+            
+        # Split text into sentences (rough approximation)
+        sentences = text.split('.')
         chunks = []
-        tokens = count_tokens(text)
-
-        if len(tokens) <= self.chunk_size:
-            return [text]
-
         current_chunk = []
-        current_size = 0
-
-        for token in tokens:
-            current_chunk.append(token)
-            current_size += 1
-
-            if current_size >= self.chunk_size:
-                chunks.append(" ".join(current_chunk))
-                # Keep overlap tokens for next chunk
-                current_chunk = current_chunk[-self.chunk_overlap :]
-                current_size = len(current_chunk)
-
+        current_length = 0
+        
+        for sentence in sentences:
+            sentence = sentence.strip()
+            if not sentence:
+                continue
+                
+            # Rough estimate of tokens (words + punctuation)
+            sentence_length = len(sentence.split())
+            
+            # If adding this sentence would exceed chunk size, save current chunk
+            if current_length + sentence_length > self.chunk_size and current_chunk:
+                chunks.append('. '.join(current_chunk) + '.')
+                current_chunk = []
+                current_length = 0
+            
+            current_chunk.append(sentence)
+            current_length += sentence_length
+        
+        # Add any remaining text as the last chunk
         if current_chunk:
-            chunks.append(" ".join(current_chunk))
-
+            chunks.append('. '.join(current_chunk) + '.')
+            
+        # Handle case where a single sentence is longer than chunk_size
+        if not chunks:
+            chunks = [text]
+            
         return chunks
 
     def process_text(self, text: str) -> List[str]:
@@ -251,6 +270,22 @@ class RAGSystem:
         text = ""
         for page in reader.pages:
             text += page.extract_text() + "\n"
+        return self.chunk_text(text)
+
+    def process_markdown(self, text: str) -> List[str]:
+        """Process Markdown files.
+        
+        Args:
+            text (str): The markdown text content to process
+            
+        Returns:
+            List[str]: List of text chunks
+        """
+        # Remove markdown image syntax to avoid issues with long URLs
+        # Remove image markdown syntax
+        text = re.sub(r'!\[.*?\]\(.*?\)', '', text)
+        # Remove URL markdown syntax
+        text = re.sub(r'\[([^\]]+)\]\(([^\)]+)\)', r'\1', text)
         return self.chunk_text(text)
 
     def process_csv(self, file_path: str) -> List[str]:
@@ -277,10 +312,9 @@ class RAGSystem:
         """Process a single file based on its extension."""
         processors = {
             ".txt": self.process_text,
+            ".md": self.process_markdown,
             ".pdf": self.process_pdf,
             ".csv": self.process_csv,
-            ".docx": self.process_docx,
-            ".pptx": self.process_pptx,
             ".json": self.process_json,
             ".html": self.process_html,
         }
@@ -288,23 +322,29 @@ class RAGSystem:
         try:
             processor = processors.get(file_path.suffix.lower())
             if processor:
-                with open(file_path, "r", encoding="utf-8") as f:
-                    if file_path.suffix.lower() == ".txt":
+                # For text-based files, read content and process
+                if file_path.suffix.lower() in [".txt", ".md", ".json", ".html"]:
+                    with open(file_path, "r", encoding="utf-8") as f:
                         chunks = processor(f.read())
-                    else:
-                        chunks = processor(str(file_path))
+                # For binary or special format files, pass the file path
+                else:
+                    chunks = processor(str(file_path))
 
                 # Add chunks to ChromaDB
-                self.collection.add(
-                    documents=chunks,
-                    metadatas=[{"source": str(file_path)} for _ in chunks],
-                    ids=[f"{file_path.stem}_{i}" for i in range(len(chunks))],
-                )
-                print(f"Successfully processed {file_path}")
+                if chunks:
+                    self.collection.add(
+                        documents=chunks,
+                        metadatas=[{"source": str(file_path)} for _ in chunks],
+                        ids=[f"{file_path.stem}_{i}" for i in range(len(chunks))],
+                    )
+                    print(f"Successfully processed {file_path}")
+                    return True
             else:
                 print(f"Unsupported file type: {file_path}")
+            return False
         except Exception as e:
             print(f"Error processing {file_path}: {str(e)}")
+            return False
 
     def query(
         self,
@@ -353,12 +393,13 @@ class RAGSystem:
 
         for result in results:
             text = result["text"]
-            tokens_in_text = len(count_tokens(text))
+            # Rough estimate of tokens using word count
+            word_count = len(text.split())
 
-            if current_tokens + tokens_in_text > max_tokens:
+            if current_tokens + word_count > max_tokens:
                 break
 
             context += text + "\n\n"
-            current_tokens += tokens_in_text
+            current_tokens += word_count
 
         return context.strip()
