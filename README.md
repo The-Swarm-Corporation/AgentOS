@@ -79,21 +79,21 @@ Developed by [Swarms.ai](https://swarms.ai) and partners, AgentOS represents a p
 
 
 
-## Technology Partners
+## Partners
 
-| Partner Name              | Partner Type | RAG | LLM | Description                                      | Website                                 |
-|---------------------------|--------------|-----|-----|--------------------------------------------------|-----------------------------------------|
-| ChromaDB                  | Core Infra   | ✅  |     | Vector database for RAG and semantic search       | https://www.trychroma.com/              |
-| Anthropic Claude          | LLM          |     | ✅  | Advanced language model (Claude 3 family)         | https://www.anthropic.com/              |
-| LiteLLM                   | LLM          |     | ✅  | Unified API for multiple LLM providers            | https://github.com/BerriAI/litellm      |
-| HuggingFace Transformers  | LLM          |     | ✅  | Open-source models and local LLM execution        | https://huggingface.co/transformers     |
-| Claude Code SDK           | Dev Tool     |     |     | Code generation, manipulation, and execution      | https://github.com/kyegomez/claude-code-sdk |
-| Browser-Use               | Automation   |     |     | Web automation and browser control                | https://github.com/kyegomez/browser-use |
-| PyPDF2                    | Doc Proc     | ✅  |     | PDF document processing for RAG                   | https://pypi.org/project/PyPDF2/        |
-| python-docx               | Doc Proc     | ✅  |     | Word document processing for RAG                  | https://pypi.org/project/python-docx/   |
-| python-pptx               | Doc Proc     | ✅  |     | PowerPoint file processing for RAG                | https://pypi.org/project/python-pptx/   |
-| BeautifulSoup4            | Doc Proc     | ✅  |     | HTML parsing and processing for RAG               | https://www.crummy.com/software/BeautifulSoup/ |
-| Pandas                    | Doc Proc     | ✅  |     | Structured data (CSV, etc.) processing for RAG    | https://pandas.pydata.org/              |
+| Partner Name              | Category     | RAG | LLM | Description                                      | Website                                 |
+|---------------------------|-------------|-----|-----|--------------------------------------------------|-----------------------------------------|
+| ChromaDB                  | Core Infra  | ✅  |     | Vector database for RAG and semantic search       | https://www.trychroma.com/              |
+| Anthropic Claude          | LLM         |     | ✅  | Advanced language model (Claude 3 family)         | https://www.anthropic.com/              |
+| LiteLLM                   | LLM         |     | ✅  | Unified API for multiple LLM providers            | https://github.com/BerriAI/litellm      |
+| HuggingFace Transformers  | LLM         |     | ✅  | Open-source models and local LLM execution        | https://huggingface.co/transformers     |
+| Claude Code SDK           | Dev Tool    |     |     | Code generation, manipulation, and execution      | https://github.com/kyegomez/claude-code-sdk |
+| Browser-Use               | Automation  |     |     | Web automation and browser control                | https://github.com/kyegomez/browser-use |
+| PyPDF2                    | Doc Proc    | ✅  |     | PDF document processing for RAG                   | https://pypi.org/project/PyPDF2/        |
+| python-docx               | Doc Proc    | ✅  |     | Word document processing for RAG                  | https://pypi.org/project/python-docx/   |
+| python-pptx               | Doc Proc    | ✅  |     | PowerPoint file processing for RAG                | https://pypi.org/project/python-pptx/   |
+| BeautifulSoup4            | Doc Proc    | ✅  |     | HTML parsing and processing for RAG               | https://www.crummy.com/software/BeautifulSoup/ |
+| Pandas                    | Doc Proc    | ✅  |     | Structured data (CSV, etc.) processing for RAG    | https://pandas.pydata.org/              |
 
 
 ## Community 
