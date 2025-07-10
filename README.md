@@ -11,7 +11,8 @@ A minimal, production-ready implementation of Andrej Karpathy's Agent Operating 
 
 ## Overview
 
-AgentOS is a lightweight, single-file implementation that provides a robust foundation for building autonomous AI agents. It implements the core concepts outlined in Karpathy's Agent OS architecture while maintaining simplicity and extensibility.
+AgentOS is a lightweight, single-file implementation that provides a robust foundation for building autonomous AI agents. It implements the core concepts outlined in Karpathy's Agent OS architecture while maintaining simplicity and extensibility. Developed by [Swarms.ai](https://swarms.ai) and its partners, AgentOS is a production-ready implementation of autonomous AI agents that follows the architectural principles outlined by Andrej Karpathy.
+
 
 ## Features
 
@@ -65,20 +66,6 @@ result = agent_os.run(
 )
 ```
 
-## About
-
-Developed by [Swarms.ai](https://swarms.ai) and partners, AgentOS represents a production-ready implementation of autonomous AI agents, following the architectural principles outlined by Andrej Karpathy.
-
-## Todo
-
-- Implement python code executor, file finder, and more
-- Implement file level embeddings
-- Implement Audio summary and analysis
-- Implement text to image and text to speech
-- Implement text to video 
-
-
-
 ## Available Tools
 
 AgentOS comes with a powerful set of built-in tools that enable various capabilities. Here's a comprehensive list of all available tools:
@@ -116,3 +103,8 @@ We welcome contributions from the community. Please see our contributing guideli
 ## License
 
 This project is under the MIT License.
+
+## Todo
+
+- [ ] Add deep research agent or sub agent
+- [ ] Implement video and audio processing
