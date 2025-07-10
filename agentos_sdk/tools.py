@@ -18,6 +18,7 @@ from transformers import (
     pipeline,
 )
 
+from agentos_sdk.workspace import check_workspace_dir
 
 # Initialize the client
 PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT_ID")
@@ -882,8 +883,8 @@ def respond_to_user(response: str):
 
 def generate_video_single_clip(
     prompt: str,
-    number_of_videos: int = 2,
-    video_path: str = "output.mp4",
+    video_filename: str,
+    number_of_videos: int = 1,
 ):
     """
     Generate a video using Google's Veo 3.0 video generation model via the GenAI SDK.
@@ -892,6 +893,8 @@ def generate_video_single_clip(
     according to the specified parameters. It uses the "veo-3.0-generate-preview" model
     hosted on Vertex AI, and supports options such as video duration, number of videos,
     aspect ratio, and whether to enhance the prompt and generate audio.
+
+    The generated video will be saved in the workspace/videos directory.
 
     Args:
         prompt (str):
@@ -902,29 +905,38 @@ def generate_video_single_clip(
         number_of_videos (int, optional):
             The number of video variations to generate for the given prompt. Default is 2.
             Each video will be a unique interpretation of the prompt.
-        video_path (str, optional):
-            The file path where the first generated video will be saved. Default is "output.mp4".
+        video_filename (str, optional):
+            The filename for the generated video (not a full path). Default is "output.mp4".
+            The video will be saved in the workspace/videos directory.
 
     Returns:
-        str: The file path where the generated video has been saved.
+        str: The full file path where the generated video has been saved.
 
     Notes:
         - The function currently saves only the first generated video, even if multiple are requested.
+        - Videos are automatically saved in the workspace/videos directory.
         - The model supports additional configuration options such as aspect ratio, prompt enhancement, and audio generation.
         - Ensure that your Google Cloud project has access to the Veo 3.0 model and that you have the necessary permissions.
         - Video generation may take several minutes depending on the prompt and duration.
         - For best results, use clear and descriptive prompts.
 
     Example:
-        >>> generate_video(
+        >>> generate_video_single_clip(
         ...     prompt="A cat surfing on a wave at sunset, cinematic style",
-        ...     video_duration=10,
         ...     number_of_videos=1,
-        ...     video_path="cat_surfing.mp4"
+        ...     video_filename="cat_surfing.mp4"
         ... )
-        Video saved as cat_surfing.mp4
+        '/path/to/workspace/videos/cat_surfing.mp4'
 
     """
+    # Get workspace directory and create videos subdirectory
+    workspace_dir = check_workspace_dir()
+    videos_dir = os.path.join(workspace_dir, "videos")
+    os.makedirs(videos_dir, exist_ok=True)
+
+    # Create full path for the video file
+    video_path = os.path.join(videos_dir, video_filename)
+
     client = genai.Client(
         vertexai=True, project=PROJECT_ID, location=LOCATION
     )
@@ -958,3 +970,79 @@ def generate_video_single_clip(
         print(f"Video saved as {video_path}")
 
     return video_path
+
+
+def create_file(
+    file_name: str,
+    content: str,
+):
+    """
+    Create a new file in the workspace/files directory and write the given content to it.
+
+    This function creates a file with the provided file name in the workspace/files subdirectory
+    (as determined by check_workspace_dir) and writes the specified content to it.
+    If the file already exists, its contents will be overwritten. If the file does not exist,
+    it will be created. The function writes the content as a string.
+
+    Args:
+        file_name (str): The name of the file to create (not a full path).
+            Example: "output.txt" or "myfile.md"
+        content (str): The content to write into the file.
+
+    Returns:
+        str: The full path to the created file.
+
+    Example:
+        >>> create_file("example.txt", "Hello, world!")
+        '/path/to/workspace/files/example.txt'
+
+    Notes:
+        - If the file already exists, its contents will be replaced.
+        - The function creates the 'files' subdirectory if it does not exist.
+        - The file is written in text mode ("w").
+    """
+    workspace_dir = check_workspace_dir()
+    files_dir = os.path.join(workspace_dir, "files")
+    os.makedirs(files_dir, exist_ok=True)
+    file_path = os.path.join(files_dir, file_name)
+    with open(file_path, "w") as f:
+        f.write(content)
+    return file_path
+
+
+def update_file(
+    file_name: str,
+    content: str,
+):
+    """
+    Overwrite the content of an existing file in the workspace/files directory.
+
+    This function updates the contents of the file with the given name in the workspace/files
+    subdirectory by overwriting it with the provided content. If the file does not exist, it will be created.
+    The function writes the content as a string.
+
+    Args:
+        file_name (str): The name of the file to update (not a full path).
+            Example: "notes.txt" or "report.md"
+        content (str): The new content to write into the file.
+
+    Returns:
+        str: The full path to the updated file.
+
+    Example:
+        >>> update_file("example.txt", "Updated content")
+        '/path/to/workspace/files/example.txt'
+
+    Notes:
+        - The function overwrites the entire file; previous contents are lost.
+        - If the file does not exist, it will be created.
+        - The function creates the 'files' subdirectory if it does not exist.
+        - The file is written in text mode ("w").
+    """
+    workspace_dir = check_workspace_dir()
+    files_dir = os.path.join(workspace_dir, "files")
+    os.makedirs(files_dir, exist_ok=True)
+    file_path = os.path.join(files_dir, file_name)
+    with open(file_path, "w") as f:
+        f.write(content)
+    return file_path

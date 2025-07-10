@@ -108,3 +108,4 @@ This project is under the MIT License.
 
 - [ ] Add deep research agent or sub agent
 - [ ] Implement video and audio processing
+- [ ] Create better system prompt and add multiple shot examples on when to use certain tools and etc 

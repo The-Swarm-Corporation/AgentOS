@@ -19,6 +19,8 @@ from agentos_sdk.tools import (
     respond_to_user,
     generate_video_single_clip,
     process_video_with_gemini,
+    create_file,
+    update_file,
 )
 
 
@@ -89,6 +91,8 @@ class AgentOS:
             generate_speech,
             respond_to_user,
             generate_video_single_clip,
+            create_file,
+            update_file,
         ]
 
         self.agent = Agent(
@@ -107,10 +111,10 @@ class AgentOS:
 
     def reasoning_agent(self):
         return Agent(
-            agent_name="Reasoning Agent",
-            agent_description="A reasoning agent that can reason about the task and perform it",
+            agent_name="AgentOS Reasoning Module",
+            agent_description="A reasoning agent that can reason about the task and perform it. It has access to the tools available to the main agent.",
             model_name="groq/deepseek-r1-distill-llama-70b",
-            system_prompt=AGENT_OS_SYSTEM_PROMPT,
+            system_prompt=f"{AGENT_OS_SYSTEM_PROMPT}\n\nTools available: {self.create_names_for_tools()}",
             streaming_on=True,
         )
 
