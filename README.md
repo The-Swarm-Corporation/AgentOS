@@ -78,6 +78,8 @@ AgentOS comes with a powerful set of built-in tools that enable various capabili
 | Terminal Developer Agent | Advanced agent for performing terminal operations and development tasks | - File operations<br>- Code execution<br>- System commands<br>- Development tasks |
 | Generate Speech | Text-to-speech conversion tool supporting multiple voices and models | - Audio content creation<br>- Voice synthesis<br>- Accessibility features<br>- Audio narration |
 | Generate Video | AI-powered video generation tool using Google's Veo 3.0 model | - Video content creation<br>- Visual storytelling<br>- Animation generation<br>- Creative content |
+| Create Files | Tool for creating new files in the workspace with specified content | - Document creation<br>- Code file generation<br>- Report writing<br>- Configuration files |
+| Update Files | Tool for updating existing files by overwriting their content | - Content modification<br>- File updates<br>- Document revisions<br>- Configuration changes |
 
 
 ## Community 
