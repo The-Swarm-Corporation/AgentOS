@@ -52,18 +52,17 @@ pip3 install -U agentos-sdk
 ## Usage
 
 ```python
-from agentos import AgentOS
+from agentos_sdk import AgentOS
+from dotenv import load_dotenv
 
-# Initialize AgentOS
-agent_os = AgentOS()
+load_dotenv()
 
-# Run a task
-result = agent_os.run(
-    task="Your task description",
-    img="optional_image.jpg",
-    video="optional_video.mp4",
-    audio="optional_audio.mp3"
+agent = AgentOS(plan_on=False, max_loops=1)
+
+agent.run(
+    "Generate a video of a cat surfing on a wave at sunset, cinematic style. Save it as 'cat_surfing.mp4. We should also add cat sounds and meowing sounds."
 )
+
 ```
 
 ## Available Tools
