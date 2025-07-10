@@ -224,7 +224,7 @@ When reporting issues:
 
 ## Code of Conduct
 
-We are committed to providing a welcoming and inspiring community for all. Please read and follow our Code of Conduct.
+We are committed to providing a welcoming and inspiring community for all. Please read and follow our Code of Conduct. [Learn more](./CONTRIBUTORS.md)
 
 ## Questions?
 
