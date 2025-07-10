@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "agentos-sdk"
-version = "0.0.1"
+version = "0.0.2"
 description = "AgentOS - TGSC"
 license = "MIT"
 authors = ["Kye Gomez <kye@apac.ai>"]
@@ -58,11 +58,18 @@ classifiers = [
 [tool.poetry.dependencies]
 python = ">=3.10,<4.0"
 swarms = "*"
+litellm = "*"
+browser-use = "*"
+transformers = "*"
+torch = "*"
 langchain-openai = "*"
 chromadb = "*"
-browser-use = "*"
-litellm = "*"
+pypdf2 = "*"
+pandas = "*"
+beautifulsoup4 = "*"
+sentence-transformers = "*"
 claude-code-sdk = "*"
+google-cloud-aiplatform = "*"
 
 
 [tool.poetry.group.lint.dependencies]
