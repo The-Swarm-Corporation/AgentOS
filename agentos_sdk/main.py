@@ -1,24 +1,32 @@
-import json
-import traceback
-from loguru import logger
 import asyncio
+import json
+import os
+import time
+import traceback
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
-from swarms.utils.formatter import formatter
+
 import torch
-from browser_use import Agent as BrowserAgentBase
 from claude_code_sdk import ClaudeCodeOptions, Message, query
 from dotenv import load_dotenv
-from langchain_openai import ChatOpenAI
+from google import genai
 from litellm import completion, speech
+from loguru import logger
 from swarms import Agent
+from swarms.utils.formatter import formatter
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
     pipeline,
 )
 
+from agentos_sdk.banner import AGENTOS_BANNER
 from agentos_sdk.rag import RAGSystem
+
+# Initialize the client
+PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT_ID")
+LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION")
+
 
 load_dotenv()
 
@@ -187,6 +195,9 @@ class BrowserAgent:
             >>> asyncio.run(agent.call_browser_agent("Search for weather in New York"))
             '{\n    "model_output": {...},\n    "result": [...],\n    "state": {...}\n}'
         """
+        from browser_use import Agent as BrowserAgentBase
+        from langchain_openai import ChatOpenAI
+        
         agent = BrowserAgentBase(
             task=task,
             llm=ChatOpenAI(model="gpt-4o"),
@@ -965,6 +976,86 @@ def respond_to_user(response: str):
     return response
 
 
+def generate_video_single_clip(
+    prompt: str,
+    number_of_videos: int = 2,
+    video_path: str = "output.mp4",
+):
+    """
+    Generate a video using Google's Veo 3.0 video generation model via the GenAI SDK.
+
+    This function takes a natural language prompt and generates a video (or multiple videos)
+    according to the specified parameters. It uses the "veo-3.0-generate-preview" model
+    hosted on Vertex AI, and supports options such as video duration, number of videos,
+    aspect ratio, and whether to enhance the prompt and generate audio.
+
+    Args:
+        prompt (str):
+            A detailed natural language description of the video you want to generate.
+            The prompt should clearly specify the scene, actions, style, and any other
+            relevant details to guide the model in producing the desired video.
+            Example: "A futuristic cityscape at night with flying cars and neon lights."
+        number_of_videos (int, optional):
+            The number of video variations to generate for the given prompt. Default is 2.
+            Each video will be a unique interpretation of the prompt.
+        video_path (str, optional):
+            The file path where the first generated video will be saved. Default is "output.mp4".
+
+    Returns:
+        str: The file path where the generated video has been saved.
+
+    Notes:
+        - The function currently saves only the first generated video, even if multiple are requested.
+        - The model supports additional configuration options such as aspect ratio, prompt enhancement, and audio generation.
+        - Ensure that your Google Cloud project has access to the Veo 3.0 model and that you have the necessary permissions.
+        - Video generation may take several minutes depending on the prompt and duration.
+        - For best results, use clear and descriptive prompts.
+
+    Example:
+        >>> generate_video(
+        ...     prompt="A cat surfing on a wave at sunset, cinematic style",
+        ...     video_duration=10,
+        ...     number_of_videos=1,
+        ...     video_path="cat_surfing.mp4"
+        ... )
+        Video saved as cat_surfing.mp4
+
+    """
+    client = genai.Client(
+        vertexai=True, project=PROJECT_ID, location=LOCATION
+    )
+
+    # Submit the video generation request to the Veo 3.0 model
+    operation = client.models.generate_videos(
+        model="veo-3.0-generate-preview",
+        prompt=prompt,
+        config=genai.types.GenerateVideosConfig(
+            aspect_ratio="16:9",
+            number_of_videos=number_of_videos,
+            duration_seconds=8,
+            enhance_prompt=True,
+            generate_audio=True,
+        ),
+    )
+
+    # Poll the operation status until the video is ready
+    while not operation.done:
+        time.sleep(15)
+        operation = client.operations.get(operation)
+        print("Operation status:", operation)
+
+    # Save the first generated video to the specified file path
+    if operation.response:
+        video_bytes = operation.result.generated_videos[
+            0
+        ].video.video_bytes
+        with open(video_path, "wb") as out_file:
+            out_file.write(video_bytes)
+        print(f"Video saved as {video_path}")
+
+    return video_path
+
+
 class AgentOS:
     """
     AgentOS: A comprehensive autonomous operating system interface for managing and coordinating multiple computational resources.
@@ -1005,6 +1096,10 @@ class AgentOS:
         rag_chunk_size: int = 1000,
         rag_collection_name: str = "agentos_docs",
         artifacts_folder: str = "artifacts",
+        streaming_on: bool = False,
+        plan_on: bool = False,
+        max_loops: int = 1,
+        reasoning_agent_on: bool = False,
     ):
         self.model_name = model_name
         self.system_prompt = system_prompt
@@ -1012,6 +1107,10 @@ class AgentOS:
         self.rag_chunk_size = rag_chunk_size
         self.rag_collection_name = rag_collection_name
         self.artifacts_folder = artifacts_folder
+        self.streaming_on = streaming_on
+        self.plan_on = plan_on
+        self.max_loops = max_loops
+        self.reasoning_agent_on = reasoning_agent_on
 
         self.setup_agent_os()
 
@@ -1023,23 +1122,42 @@ class AgentOS:
             call_terminal_developer_agent,
             generate_speech,
             respond_to_user,
+            generate_video_single_clip,
         ]
 
         self.agent = Agent(
             model_name=model_name,
             system_prompt=system_prompt,
             agent_name="AgentOS",
-            description="An agent that can perform OS-level tasks",
+            agent_description="An agent that can perform OS-level tasks",
             dynamic_temperature_enabled=True,
             tools=tools,
-            streaming_on=True,
+            streaming_on=self.streaming_on,
+            interactive_on=False,
+            max_turns=self.max_loops,
         )
 
         self.rag_system = self.setup_rag()
 
+    def reasoning_agent(self):
+        return Agent(
+            agent_name="Reasoning Agent",
+            agent_description="A reasoning agent that can reason about the task and perform it",
+            model_name="groq/deepseek-r1-distill-llama-70b",
+            system_prompt=AGENT_OS_SYSTEM_PROMPT,
+            streaming_on=True,
+        )
+
+    def create_names_for_tools(self) -> str:
+        # Get the names of the tools
+        tool_names = [tool.__name__ for tool in self.agent.tools]
+        return "\n".join(tool_names)
+
     def setup_agent_os(self):
-        title = """
+        title = f"""
         Welcome to AgentOS
+        
+        {AGENTOS_BANNER}
         
         AgentOS is a comprehensive autonomous operating system interface for managing and coordinating multiple computational resources. 
         AgentOS is designed to be highly modular and extensible, allowing for easy integration of new capabilities and tools while maintaining a consistent interface for users.
@@ -1051,6 +1169,7 @@ class AgentOS:
         - [Tool 4][Safe Calculator][Description: The Safe Calculator is a tool that can be used to perform calculations.]
         - [Tool 5][Terminal Developer Agent][Description: The Terminal Developer Agent is a tool that can be used to perform terminal tasks.]
         - [Tool 6][Generate Speech][Description: The Generate Speech is a tool that can be used to generate speech.]
+        - [Tool 7][Generate Video][Description: The Generate Video is a tool that can be used to generate video.]
         
         Tutorial:
         
@@ -1060,6 +1179,8 @@ class AgentOS:
             content=title,
             title="AgentOS",
         )
+
+        self.env_warning()
 
     def setup_rag(self):
         """
@@ -1075,6 +1196,23 @@ class AgentOS:
             collection_name=self.rag_collection_name,
             chunk_size=self.rag_chunk_size,
         )
+
+    def env_warning(self):
+        # We need to add warning for the user to set the environment variables
+        if os.getenv("OPENAI_API_KEY") is None:
+            logger.warning(
+                "OPENAI_API_KEY is not set in your .env Please set the key. This is required for the browser agent and the main model."
+            )
+        elif os.getenv("ANTHROPIC_API_KEY") is None:
+            logger.warning(
+                "ANTHROPIC_API_KEY is not set in your .env Please set the key. This is required for the terminal developer agent."
+            )
+        elif os.getenv("GEMINI_API_KEY") is None:
+            logger.warning(
+                "GEMINI_API_KEY is not set in your .env Please set the key. This is required for video processing. You can get the key from https://console.cloud.google.com/apis/credentials"
+            )
+        else:
+            logger.info("All environment variables are set")
 
     def add_file(self, file_path: str):
         """
@@ -1153,7 +1291,16 @@ class AgentOS:
             - Errors are caught and returned as informative messages
         """
         try:
+
             task_prompt = ""
+
+            # Plan prompt
+            if self.plan_on:
+                planning_agent = self.reasoning_agent()
+                plan_prompt = planning_agent.run(
+                    task=f"Make a plan for the task: {task}. What are the steps to complete the task? Use the following tools: {self.create_names_for_tools()}"
+                )
+                task_prompt += f"Plan:\n{plan_prompt}\n\n"
 
             # Add RAG context if available
             if self.rag_system:
@@ -1184,6 +1331,7 @@ class AgentOS:
             logger.error(
                 f"Error running AgentOS: {str(e)} Traceback: {traceback.format_exc()}"
             )
+            
 
     def batched_run(
         self,

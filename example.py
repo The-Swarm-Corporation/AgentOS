@@ -3,12 +3,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# litellm._turn_on_debug()
-
-agent = AgentOS()
-
-agent.add_file("readme.md")
+agent = AgentOS(plan_on=False, max_loops=2)
 
 agent.run(
-    "what is the readme.md file about? Create a summary of the readme.md file and just respond to me don't use any tools"
+    "Generate an extensive anime-like video about a zen garden in the mountains of Japan, with large sunny areas, a small river, and water flowing through it. Use the generate video tool to generate the video."
 )

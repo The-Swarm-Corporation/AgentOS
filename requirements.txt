@@ -10,3 +10,4 @@ pandas
 beautifulsoup4
 sentence-transformers
 claude-code-sdk
+google-cloud-aiplatform

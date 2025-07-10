@@ -328,14 +328,25 @@ class RAGSystem:
         text = json.dumps(data, indent=2)
         return self.chunk_text(text)
 
-    def process_html(self, file_path: str) -> List[str]:
-        """Process HTML files."""
-        with open(file_path, "r") as f:
-            soup = BeautifulSoup(f.read(), "html.parser")
-        text = soup.get_text()
-        return self.chunk_text(text)
+    def process_html(self, content: str) -> List[str]:
+        """Process HTML content.
 
-    def _process_file(self, file_path: Path) -> None:
+        Args:
+            content: The HTML content to process as a string
+
+        Returns:
+            List[str]: List of text chunks
+        """
+        try:
+            soup = BeautifulSoup(content, "html.parser")
+            # Extract text content and remove excessive whitespace
+            text = " ".join(soup.get_text().split())
+            return self.chunk_text(text)
+        except Exception as e:
+            print(f"Error processing HTML content: {str(e)}")
+            return []
+
+    def _process_file(self, file_path: Path) -> bool:
         """Process a single file based on its extension."""
         processors = {
             ".txt": self.process_text,
@@ -380,7 +391,8 @@ class RAGSystem:
                 print(f"Unsupported file type: {file_path}")
             return False
         except Exception as e:
-            print(f"Error processing {file_path}: {str(e)}")
+            # Only print the file path in the error message, not the content
+            print(f"Error processing file {str(file_path)}: {str(e)}")
             return False
 
     def query(
