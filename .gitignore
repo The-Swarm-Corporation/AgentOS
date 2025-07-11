@@ -15,6 +15,7 @@ Financial-Analysis-Agent_state.json
 artifacts_five
 encryption
 errors
+artifacts
 chroma
 agent_workspace
 .pt

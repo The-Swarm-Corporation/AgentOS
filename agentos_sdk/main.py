@@ -85,8 +85,8 @@ class AgentOS:
 
         tools = [
             run_browser_agent,
-            # call_huggingface_model,
-            # call_models_on_litellm,
+            call_huggingface_model,
+            call_models_on_litellm,
             safe_calculator,
             call_terminal_developer_agent,
             generate_speech,
