@@ -377,12 +377,15 @@ def call_huggingface_model(
         Exception: Any exceptions from model loading or generation are caught by
             HuggingFaceAPI and returned as error messages in the output string.
     """
+    print(f"◢ HUGGINGFACE MODEL: Initializing {model_id}")
     model = HuggingFaceAPI(
         model_id=model_id,
         task_type="text-generation",
         max_length=max_length,
     )
-    return model.run(task)
+    result = model.run(task)
+    print(f"◢ HUGGINGFACE MODEL: Generated {len(result)} characters")
+    return result
 
 
 async def call_terminal_developer_agent_async(
@@ -510,6 +513,7 @@ def call_terminal_developer_agent(
     """
     import json
 
+    print("◢ TERMINAL DEVELOPER AGENT: Starting task execution")
     logger.info(f"Calling terminal developer agent with task: {task}")
     output = asyncio.run(
         call_terminal_developer_agent_async(
@@ -521,6 +525,7 @@ def call_terminal_developer_agent(
             permission_mode=permission_mode,
         )
     )
+    print("◢ TERMINAL DEVELOPER AGENT: Task completed")
     return json.dumps(output, indent=2)
 
 
@@ -853,8 +858,11 @@ def run_browser_agent(task: str) -> str:
         - The returned JSON can be parsed for further programmatic analysis or logging.
         - This function is blocking and should be called from synchronous code.
     """
+    print(f"◢ BROWSER AGENT: Executing task - {task}")
     model: BrowserAgent = BrowserAgent()
-    return model.run(task)
+    result = model.run(task)
+    print("◢ BROWSER AGENT: Task completed successfully")
+    return result
 
 
 def respond_to_user(response: str):
@@ -873,11 +881,13 @@ def respond_to_user(response: str):
       - The response requires searching documents, browsing the web, or running code.
       - Any tool or plugin must be invoked to fulfill the user's request.
     """
+    # Print the response for console output capture
+    print(f"AgentOS Response: {response}")
+
     formatter.print_panel(
         content=response,
         title="AgentOS Response",
     )
-
     return response
 
 

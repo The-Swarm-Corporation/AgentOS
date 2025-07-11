@@ -11,3 +11,5 @@ beautifulsoup4
 sentence-transformers
 claude-code-sdk
 google-cloud-aiplatform
+rich>=13.0.0
+psutil>=5.9.0

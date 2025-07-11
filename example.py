@@ -6,5 +6,5 @@ load_dotenv()
 agent = AgentOS(plan_on=False, max_loops=1)
 
 agent.run(
-    "Generate a video of a cat surfing on a wave at sunset, cinematic style. Save it as 'cat_surfing.mp4. We should also add cat sounds and meowing sounds."
+    "Summarize the top high-frequency trading strategies in commodity markets and save the report as 'high_frequency_commodity_strategies.txt'."
 )

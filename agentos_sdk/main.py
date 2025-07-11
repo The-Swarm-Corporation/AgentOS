@@ -1,5 +1,6 @@
 import os
 import traceback
+import time
 from typing import List, Optional
 
 from loguru import logger
@@ -84,8 +85,8 @@ class AgentOS:
 
         tools = [
             run_browser_agent,
-            call_huggingface_model,
-            call_models_on_litellm,
+            # call_huggingface_model,
+            # call_models_on_litellm,
             safe_calculator,
             call_terminal_developer_agent,
             generate_speech,
@@ -103,8 +104,9 @@ class AgentOS:
             dynamic_temperature_enabled=True,
             tools=tools,
             streaming_on=self.streaming_on,
-            interactive_on=False,
             max_turns=self.max_loops,
+            print_on=True,
+            output_type="str-all-except-first",
         )
 
         self.rag_system = self.setup_rag()
@@ -145,6 +147,7 @@ class AgentOS:
         
         Simply provide the task you want to perform and the agent will perform it. The more specific the task, the better the result.
         """
+
         formatter.print_panel(
             content=title,
             title="AgentOS",
@@ -261,7 +264,6 @@ class AgentOS:
             - Errors are caught and returned as informative messages
         """
         try:
-
             task_prompt = ""
 
             # Plan prompt
@@ -286,6 +288,7 @@ class AgentOS:
                 )
                 task_prompt += f"Video Analysis Output:\n{out}\n\n"
 
+            # Run the agent
             final_output = self.agent.run(
                 task=task_prompt + task if task_prompt else task,
                 img=img,
@@ -298,9 +301,11 @@ class AgentOS:
             return final_output
 
         except Exception as e:
+            error_msg = f"Error: {str(e)}"
             logger.error(
                 f"Error running AgentOS: {str(e)} Traceback: {traceback.format_exc()}"
             )
+            return error_msg
 
     def batched_run(
         self,
